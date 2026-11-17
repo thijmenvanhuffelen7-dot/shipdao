@@ -1,7 +1,6 @@
-// Admin only. Marks an order as shipped in Shipdao and, when it came from Shopify,
+// Admin or agent. Marks an order as shipped in Shipdao and, when it came from Shopify,
 // creates the fulfillment with tracking in the client's store (customer gets the tracking email).
 // POST { order_id }
-// (unchanged; copied from the deployed version so the repo holds every function)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -21,8 +20,8 @@ Deno.serve(async (req) => {
   const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
   });
-  const { data: isAdmin } = await userClient.rpc("is_admin");
-  if (!isAdmin) return json({ error: "Not allowed" }, 403);
+  const [{ data: isAdmin }, { data: isAgent }] = await Promise.all([userClient.rpc("is_admin"), userClient.rpc("is_agent")]);
+  if (!isAdmin && !isAgent) return json({ error: "Not allowed" }, 403);
 
   const { order_id } = await req.json().catch(() => ({ order_id: null }));
   if (!order_id) return json({ error: "order_id required" }, 400);

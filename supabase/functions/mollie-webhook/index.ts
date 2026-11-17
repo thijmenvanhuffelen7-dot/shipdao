@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     p_payment: paymentId, p_mollie_id: m.id, p_status: m.status, p_amount: Number(m.amount?.value),
     p_method: m.method ?? null, p_mode: m.mode ?? null, p_charged_back: Number(m.amountChargedBack?.value ?? 0),
   });
+  await admin.from("system_events").insert({ source: "mollie", topic: m.status, ok: !error, detail: error ? `${id}: ${error.message}` : id }).then(() => {}, () => {});
   if (error) { console.error("mark", id, error.message); return new Response("Error", { status: 500 }); }
   console.log("mollie", id, JSON.stringify(data));
   return new Response("ok");

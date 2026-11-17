@@ -129,6 +129,11 @@ dialog.wide{max-width:760px}
 tr.click{cursor:pointer}tr.click:hover td{background:var(--rice)}
 .dot{display:inline-block;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center;margin-left:4px}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.filters input{width:auto}
+.qc{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.qc a{display:block}.qc img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block}
+.ag-card{margin-bottom:12px}.ag-items{display:grid;gap:8px;margin:10px 0}.ag-item{display:flex;gap:10px;align-items:center}
+.ag-addr{background:var(--rice);border-radius:10px;padding:10px 12px;font-size:14px;white-space:pre-line}
+.ag-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}@media(max-width:820px){.ag-grid{grid-template-columns:1fr}}
+.zh{color:var(--muted);font-size:12px;margin-left:4px}
 .legal{max-width:760px;margin:0 auto;padding:40px 20px 80px}.legal h1{margin:18px 0 6px}.legal h2{font-size:19px;margin:26px 0 8px}.legal p,.legal li{color:var(--ink2)}.legal ol,.legal ul{padding-left:20px}
 .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.7}.foot a{color:var(--muted)}
 .amounts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
@@ -420,18 +425,19 @@ const PUBLIC = { "/docs": docsPage, "/partners": partnersPage, "/terms": () => r
 function renderAuth(mode = "login") {
   $root.innerHTML = `<div class="auth"><div class="card">
     ${sealBrand}
-    <h1 style="margin-top:22px">${mode === "signup" ? "Create your account" : mode === "reset" ? "Reset password" : "Welcome back"}</h1>
-    <p class="muted small" style="margin:6px 0 0">${mode === "signup" ? "Get quotes, top up your balance and follow every order." : "Your fulfilment portal."}</p>
-    ${mode !== "reset" ? `<div class="tabs"><button class="${mode === "login" ? "" : "ghost"}" data-m="login">Log in</button><button class="${mode === "signup" ? "" : "ghost"}" data-m="signup">Sign up</button></div>` : `<div style="height:18px"></div>`}
+    <h1 style="margin-top:22px">${mode === "signup" ? "Create your account" : mode === "join" ? "Agent account <span class='zh'>代理账户</span>" : mode === "reset" ? "Reset password" : "Welcome back"}</h1>
+    <p class="muted small" style="margin:6px 0 0">${mode === "signup" ? "Get quotes, top up your balance and follow every order." : mode === "join" ? "Use the email address Shipdao invited. 请使用受邀的邮箱注册。" : "Your fulfilment portal."}</p>
+    ${mode === "join" ? `<div style="height:18px"></div>` : mode !== "reset" ? `<div class="tabs"><button class="${mode === "login" ? "" : "ghost"}" data-m="login">Log in</button><button class="${mode === "signup" ? "" : "ghost"}" data-m="signup">Sign up</button></div>` : `<div style="height:18px"></div>`}
     <form id="authForm">
       ${mode === "signup" ? `
         <div class="field"><label>Store name</label><input name="company" required></div>
         <div class="field"><label>Your name</label><input name="full_name" required></div>
         <div class="field"><label>Store URL</label><input name="store_url" placeholder="https://"></div>` : ""}
+      ${mode === "join" ? `<div class="field"><label>Your name <span class="zh">姓名</span></label><input name="full_name" required></div>` : ""}
       <div class="field"><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       ${mode !== "reset" ? `<div class="field"><label>Password</label><input name="password" type="password" minlength="8" required autocomplete="${mode === "signup" ? "new-password" : "current-password"}"></div>` : ""}
       ${mode === "signup" ? `<label class="check"><input type="checkbox" name="terms" required><span>I agree to the <a href="#/terms" target="_blank">terms</a> and the <a href="#/dpa" target="_blank">data processing agreement</a>, and I have read the <a href="#/privacy" target="_blank">privacy statement</a>.</span></label>` : ""}
-      <button style="width:100%;margin-top:6px">${mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Log in"}</button>
+      <button style="width:100%;margin-top:6px">${mode === "join" ? "Create agent account" : mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Log in"}</button>
     </form>
     <p class="small" style="text-align:center;margin:16px 0 0">${mode === "reset" ? `<a href="#" data-m="login">Back to log in</a>` : `<a href="#" data-m="reset">Forgot password?</a>`}</p>
   ${footer()}</div></div>`;
@@ -440,7 +446,11 @@ function renderAuth(mode = "login") {
     e.preventDefault(); const f = Object.fromEntries(new FormData(e.target).entries());
     const btn = e.target.querySelector("button"); btn.disabled = true;
     try {
-      if (mode === "signup") {
+      if (mode === "join") {
+        const { data, error } = await sb.auth.signUp({ email: f.email, password: f.password, options: { data: { full_name: f.full_name, agent: true }, emailRedirectTo: location.origin + location.pathname } });
+        if (error) throw error;
+        if (!data.session) { toast("Check your email to confirm your account. 请查收邮件确认账户。"); location.hash = "/login"; }
+      } else if (mode === "signup") {
         const { data, error } = await sb.auth.signUp({ email: f.email, password: f.password,
           options: { data: { company: f.company, full_name: f.full_name, store_url: f.store_url, terms_accepted_at: new Date().toISOString(), terms_version: 1 }, emailRedirectTo: location.origin + location.pathname } });
         if (error) throw error;
@@ -458,13 +468,15 @@ function renderAuth(mode = "login") {
 
 // ===== SHELL =====
 function shell(active, content, counts = {}) {
-  const admin = ME.role === "admin";
+  const admin = ME.role === "admin", agent = ME.role === "agent";
   const link = (h, label, badge) => `<a href="#${h}" class="${active === h ? "on" : ""}"><span>${label}</span>${badge ? `<span class="badge">${badge}</span>` : ""}</a>`;
   $root.innerHTML = `<div class="app"><aside class="side">
       <div class="brand"><div class="seal">道</div>shipdao</div>
-      <nav class="nav">${admin ? `
+      <nav class="nav">${agent ? `
+        <div class="sec">Agent · 代理</div>
+        ${link("/agent", "Orders <span class='zh'>订单</span>", counts.orders)}${link("/agent/shipped", "Shipped <span class='zh'>已发货</span>")}` : admin ? `
         <div class="sec">Admin</div>
-        ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/messages", "Messages", counts.messages)}${link("/admin/clients", "Clients")}` : `
+        ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/messages", "Messages", counts.messages)}${link("/admin/leads", "Leads", counts.leads)}${link("/admin/clients", "Clients")}${link("/admin/insights", "Insights", counts.health)}` : `
         ${link("/", "Overview")}${link("/orders", "Orders", counts.orders)}${link("/products", "Products", counts.products)}${link("/balance", "Balance")}${link("/quotes", "Quotes")}${link("/connect", "Connect store")}${link("/account", "Account")}`}
       </nav>
       <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">Log out</a><div style="margin-top:8px;font-size:11px"><a href="#/docs" style="color:var(--muted)">Help</a> · <a href="#/terms" style="color:var(--muted)">Terms</a> · <a href="#/privacy" style="color:var(--muted)">Privacy</a></div></div>
@@ -513,6 +525,141 @@ async function openThread({ orderId = null, productId = null, clientId, title, e
   return dlg;
 }
 const addrText = (a) => esc([a?.name || [a?.first_name, a?.last_name].filter(Boolean).join(" "), a?.address1, a?.address2, [a?.zip, a?.city].filter(Boolean).join(" "), a?.province, a?.country_code || a?.country, a?.phone].filter(Boolean).join("\n")).replace(/\n/g, "<br>");
+
+// ===== SHARED: QC photos =====
+async function uploadQc(files, { clientId, orderId = null, productId = null }) {
+  let n = 0;
+  for (const file of files) {
+    if (!/^image\//.test(file.type)) { toast(`${file.name}: not an image`, true); continue; }
+    if (file.size > 8 * 1024 * 1024) { toast(`${file.name}: larger than 8 MB`, true); continue; }
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+    const path = `${clientId}/${orderId || productId}/${crypto.randomUUID()}.${ext}`;
+    const up = await sb.storage.from("qc").upload(path, file, { contentType: file.type, upsert: false });
+    if (up.error) { toast(up.error.message, true); continue; }
+    const { error } = await sb.from("qc_photos").insert({ client_id: clientId, order_id: orderId, product_id: productId, path });
+    if (error) { toast(error.message, true); continue; }
+    n++;
+  }
+  if (n) toast(`${n} photo${n > 1 ? "s" : ""} uploaded`);
+  return n;
+}
+async function qcGallery({ orderId = null, productId = null }) {
+  let q = sb.from("qc_photos").select("path, created_at").order("created_at");
+  q = orderId ? q.eq("order_id", orderId) : q.eq("product_id", productId);
+  const { data } = await q;
+  if (!data?.length) return "";
+  const { data: urls } = await sb.storage.from("qc").createSignedUrls(data.map((p) => p.path), 3600);
+  return `<div class="qc">${(urls || []).filter((u) => u.signedUrl).map((u) => `<a href="${esc(u.signedUrl)}" target="_blank" rel="noopener"><img src="${esc(u.signedUrl)}" alt="Quality check photo" loading="lazy"></a>`).join("")}</div>`;
+}
+
+// ===== AGENT VIEWS =====
+const CARRIERS = ["YunExpress", "YanWen", "4PX", "Cainiao", "China Post", "PostNL", "DHL", "Other"];
+const trackUrl = (n) => `https://t.17track.net/en#nums=${encodeURIComponent(n)}`;
+async function agentShip(id, t) {
+  await rpc("agent_update_order", { p_order: id, p_action: "tracking", p_tracking_number: t.number, p_tracking_company: t.carrier || null, p_tracking_url: t.url || trackUrl(t.number), p_actual_cost: t.cost === "" || t.cost == null ? null : Number(t.cost) });
+  const r = await sb.functions.invoke("shopify-fulfill", { body: { order_id: id } });
+  if (r.error) { let m = r.error.message; try { m = (await r.error.context.json()).error || m; } catch {} throw new Error(m); }
+  return r.data;
+}
+let agentTab = "todo";
+async function agentOrders(shippedView = false) {
+  const active = shippedView ? "/agent/shipped" : "/agent";
+  loading(active);
+  const os = await rpc("agent_orders", { p_days: 30 });
+  const tabs = {
+    todo: ["To buy <span class='zh'>待采购</span>", (o) => o.status === "paid"],
+    progress: ["In progress <span class='zh'>处理中</span>", (o) => o.status === "sent_to_agent"],
+    flagged: ["Problems <span class='zh'>问题</span>", (o) => o.agent_flagged_at && o.status !== "shipped"],
+    address: ["Address check <span class='zh'>地址问题</span>", (o) => o.status === "address_error"],
+  };
+  const list = shippedView ? os.filter((o) => o.status === "shipped").reverse() : os.filter(tabs[agentTab][1]);
+  const counts = { orders: os.filter((o) => o.status === "paid").length };
+  const addr = (o) => { const a = o.shipping_address || {}; return [a.name || [a.first_name, a.last_name].filter(Boolean).join(" ") || o.customer_name, a.company, a.address1, a.address2, [a.zip, a.city].filter(Boolean).join(" "), a.province, a.country_code || o.country, a.phone].filter(Boolean).join("\n"); };
+  shell(active, `<div class="head"><div><h1>${shippedView ? "Shipped <span class='zh'>已发货</span>" : "Orders <span class='zh'>订单</span>"}</h1>
+      <p class="muted" style="margin:4px 0 0">${shippedView ? "Last 30 days." : "Buy, check, pack and ship. Add tracking and it goes to the store automatically. 填写物流单号后会自动同步到店铺。"}</p></div>
+      ${shippedView ? "" : `<div class="row"><button class="ghost" id="agCsv">Export to-buy list (CSV)</button><label class="btn" style="cursor:pointer">Import tracking (CSV)<input type="file" id="agImport" accept=".csv,text/csv" hidden></label></div>`}</div>
+    ${shippedView ? "" : `<div class="chips" style="margin-bottom:14px">${Object.entries(tabs).map(([k, [l, fn]]) => `<button class="sm ${agentTab === k ? "on" : ""}" data-at="${k}">${l} <span class="muted">${os.filter(fn).length}</span></button>`).join("")}</div>`}
+    ${list.length ? list.map((o) => `<div class="card ag-card" data-ao="${o.id}">
+      <div class="row" style="justify-content:space-between"><div><b>${esc(o.order_number || "–")}</b> <span class="muted small">· ${esc(o.store)} · paid ${o.paid_at ? ago(o.paid_at) : "–"}</span></div>
+        <div class="row">${pill(o.status)}<span class="small muted">Ref ${esc(o.id.slice(0, 8))}</span></div></div>
+      ${o.agent_note ? `<div class="notice" style="margin-top:10px;background:var(--red-soft);color:var(--red)">⚠ ${esc(o.agent_note)}</div>` : ""}
+      <div class="ag-grid" style="margin-top:10px">
+        <div><div class="ag-items">${(o.items || []).map((i) => `<div class="ag-item">${thumb(i.image_url)}<div><b>${esc(i.quantity || 1)}×</b> ${esc(i.title)}${i.variant_title ? ` <span class="muted">(${esc(i.variant_title)})</span>` : ""}
+            <div class="small muted">${i.sku ? "SKU " + esc(i.sku) + " · " : ""}${i.source_url ? link(i.source_url, "Supplier link 采购链接") : "<span style='color:var(--red)'>no supplier link</span>"}${i.notes ? " · " + esc(i.notes) : ""}</div></div></div>`).join("")}</div>
+          <div class="small muted" style="margin-bottom:4px">QC photos <span class="zh">质检照片</span> (${o.photos})</div><div data-qc="${o.id}"></div>
+          ${shippedView ? "" : `<label class="btn ghost sm" style="cursor:pointer;margin-top:6px">+ Add photos <span class="zh">上传照片</span><input type="file" accept="image/*" multiple hidden data-upload="${o.id}"></label>`}</div>
+        <div><div class="row" style="justify-content:space-between"><span class="small muted">Ship to <span class="zh">收件地址</span></span><button class="ghost sm" data-copy="${o.id}">Copy</button></div>
+          <div class="ag-addr" data-addr="${o.id}">${esc(addr(o))}</div>
+          ${o.note ? `<div class="small" style="margin-top:6px">Note: ${esc(o.note)}</div>` : ""}
+          ${shippedView ? `<div style="margin-top:10px">Tracking: ${link(o.tracking_url, o.tracking_number || "–")} <span class="muted small">${esc(o.tracking_company || "")}</span>${o.actual_cost != null ? ` · cost ${eur(o.actual_cost)}` : ""}</div>` : `
+          ${o.status === "paid" ? `<button class="sm" style="margin-top:10px" data-accept="${o.id}">Accept order <span class="zh">接单</span></button>` : ""}
+          ${["paid", "sent_to_agent"].includes(o.status) ? `<form class="ship" data-ship="${o.id}" style="margin-top:10px;display:grid;gap:6px">
+            <input name="number" placeholder="Tracking number 物流单号" required>
+            <div class="row" style="gap:6px;flex-wrap:nowrap"><select name="carrier">${CARRIERS.map((c) => `<option>${c}</option>`).join("")}</select><input name="cost" type="number" step="0.01" min="0" placeholder="Your cost € 成本"></div>
+            <button class="red sm">Ship + send tracking <span class="zh" style="color:#fff">发货</span></button></form>` : ""}
+          <form data-flag="${o.id}" class="row" style="margin-top:8px;gap:6px;flex-wrap:nowrap"><input name="note" placeholder="Problem? Out of stock, wrong size… 有问题请填写" value="${esc(o.agent_note || "")}"><button class="ghost sm">${o.agent_note ? "Update" : "Report"}</button></form>`}
+        </div></div></div>`).join("") : `<div class="card empty">${shippedView ? "Nothing shipped yet." : "Nothing here. 暂无订单。"}</div>`}`, counts);
+
+  // photos
+  list.forEach(async (o) => { if (Number(o.photos)) { const el = document.querySelector(`[data-qc="${o.id}"]`); if (el) el.innerHTML = await qcGallery({ orderId: o.id }); } });
+  document.querySelectorAll("[data-upload]").forEach((inp) => (inp.onchange = async () => {
+    const o = os.find((x) => x.id === inp.dataset.upload);
+    if (await uploadQc([...inp.files], { clientId: o.client_id, orderId: o.id })) agentOrders(shippedView);
+  }));
+  document.querySelectorAll("[data-at]").forEach((b) => (b.onclick = () => { agentTab = b.dataset.at; agentOrders(); }));
+  document.querySelectorAll("[data-copy]").forEach((b) => (b.onclick = async () => {
+    try { await navigator.clipboard.writeText(document.querySelector(`[data-addr="${b.dataset.copy}"]`).textContent); toast("Address copied 已复制"); } catch { toast("Copy failed", true); }
+  }));
+  document.querySelectorAll("[data-accept]").forEach((b) => (b.onclick = () => busy(b, async () => { await rpc("agent_update_order", { p_order: b.dataset.accept, p_action: "accept" }); agentOrders(); })));
+  document.querySelectorAll("[data-ship]").forEach((f) => (f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
+    try { const r = await agentShip(f.dataset.ship, { number: f.number.value.trim(), carrier: f.carrier.value, cost: f.cost.value });
+      toast(r.shopify === "fulfilled" ? "Shipped. The customer gets the tracking email. 已发货" : "Shipped (" + r.shopify + ")"); agentOrders(); }
+    catch (err) { toast(err.message, true); }
+  }); }));
+  document.querySelectorAll("[data-flag]").forEach((f) => (f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
+    await rpc("agent_update_order", { p_order: f.dataset.flag, p_action: "flag", p_note: f.note.value }); toast(f.note.value.trim() ? "Reported to Shipdao 已通知" : "Cleared"); agentOrders();
+  }); }));
+  const csvBtn = document.getElementById("agCsv");
+  if (csvBtn) csvBtn.onclick = () => {
+    const todo = os.filter((o) => ["paid", "sent_to_agent"].includes(o.status) && !o.tracking_number);
+    if (!todo.length) return toast("Nothing to buy", true);
+    const rows = [];
+    for (const o of todo) { const a = o.shipping_address || {}; for (const i of o.items || []) rows.push([o.id, o.order_number, o.store, a.name || [a.first_name, a.last_name].filter(Boolean).join(" ") || o.customer_name, a.address1, a.address2, a.city, a.zip, a.province, a.country_code || o.country, a.phone, i.sku, i.title, i.variant_title, i.quantity, i.source_url, "", "", ""]); }
+    downloadCsv(`shipdao-to-buy-${new Date().toISOString().slice(0, 10)}.csv`, ["Ref", "Order", "Store", "Name", "Address 1", "Address 2", "City", "Zip", "Province", "Country", "Phone", "SKU", "Product", "Variant", "Qty", "Supplier link", "Tracking", "Carrier", "Cost"], rows);
+    toast("Fill in Tracking, Carrier and Cost, then use Import tracking. 填写后导入");
+  };
+  const imp = document.getElementById("agImport");
+  if (imp) imp.onchange = async () => {
+    const text = await imp.files[0].text();
+    const rows = parseCsv(text); const head = (rows.shift() || []).map((h) => h.trim().toLowerCase());
+    const col = (n) => head.indexOf(n);
+    if (col("ref") < 0 || col("tracking") < 0) return toast("CSV needs the columns Ref and Tracking", true);
+    const done = new Set(); let ok = 0, fail = 0;
+    for (const r of rows) {
+      const ref = (r[col("ref")] || "").trim(), number = (r[col("tracking")] || "").trim();
+      if (!ref || !number || done.has(ref)) continue;
+      const o = os.find((x) => x.id === ref || x.id.startsWith(ref)); done.add(ref);
+      if (!o) { fail++; continue; }
+      try { await agentShip(o.id, { number, carrier: col("carrier") >= 0 ? r[col("carrier")] : "", cost: col("cost") >= 0 ? (r[col("cost")] || "").replace(",", ".") : "" }); ok++; }
+      catch (err) { fail++; toast(`${o.order_number}: ${err.message}`, true); }
+    }
+    toast(`${ok} order(s) shipped${fail ? `, ${fail} failed` : ""}`); agentOrders();
+  };
+}
+function parseCsv(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  text = text.replace(/^\ufeff/, "");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === "," || c === ";") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c !== "\r") cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((x) => x.trim()));
+}
 
 // ===== CLIENT VIEWS =====
 function topupBlock() {
@@ -612,7 +759,9 @@ async function clientOrderDetail(o, reload) {
         <div class="muted small" style="margin-top:8px">Received ${ago(o.created_at)}${o.paid_at ? ` · paid ${ago(o.paid_at)}` : ""}${o.shipped_at ? ` · shipped ${ago(o.shipped_at)}` : ""}</div>
         ${o.tracking_number ? `<div style="margin-top:6px">Tracking: ${link(o.tracking_url, o.tracking_number)} ${o.tracking_company ? `<span class="muted small">${esc(o.tracking_company)}</span>` : ""}</div>` : ""}
         ${o.note ? `<div class="muted small" style="margin-top:6px">Note: ${esc(o.note)}</div>` : ""}</div></div>
+    <div id="qcBox"></div>
     <div class="hr" style="margin:14px 0 6px"></div><b class="small">Messages about this order</b>`;
+  qcGallery({ orderId: o.id }).then((g) => { const el = document.getElementById("qcBox"); if (el && g) el.innerHTML = `<div class="muted small" style="margin-top:12px">Quality check photos</div>${g}`; });
   await openThread({ orderId: o.id, clientId: ME.client?.id, title: `Order ${o.order_number || ""}`, extra, onClose: reload });
   const f = document.getElementById("addrForm");
   if (f) f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
@@ -810,20 +959,27 @@ async function clientProducts() {
 
 // ===== ADMIN VIEWS =====
 async function adminCounts() {
-  const [q, o, p, m] = await Promise.all([
+  const [q, o, p, m, l, h] = await Promise.all([
     sb.from("quotes").select("id", { count: "exact", head: true }).eq("status", "requested"),
     sb.from("orders").select("id", { count: "exact", head: true }).in("status", ["paid", "on_hold", "issue", "address_error"]),
     sb.from("products").select("id", { count: "exact", head: true }).eq("sourcing_status", "to_source").or("shopify_status.is.null,shopify_status.neq.DELETED"),
     sb.from("messages").select("id", { count: "exact", head: true }).eq("from_admin", false).is("read_by_admin_at", null),
+    sb.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
+    sb.from("system_events").select("id", { count: "exact", head: true }).eq("ok", false).gt("created_at", new Date(Date.now() - 864e5).toISOString()),
   ]).then((rs) => rs.map((x) => x.count));
-  return { quotes: q || 0, orders: o || 0, products: p || 0, messages: m || 0 };
+  return { quotes: q || 0, orders: o || 0, products: p || 0, messages: m || 0, leads: l || 0, health: h || 0 };
 }
 async function adminOverview() {
   loading("/admin");
-  const [ov, counts] = await Promise.all([rpc("admin_overview"), adminCounts()]);
+  const [ov, counts, flagged] = await Promise.all([rpc("admin_overview"), adminCounts(),
+    sb.from("orders").select("id", { count: "exact", head: true }).not("agent_flagged_at", "is", null).in("status", ["paid", "sent_to_agent"])]);
+  ov.flagged = flagged.count || 0;
   const t = ov.totals, cs = ov.clients;
   const go = (hash, f) => `href="#${hash}" data-go="${f || ""}"`;
   const todo = [
+    [counts.health, "system error(s) in the last 24 hours (Shopify / Mollie / form)", "/admin/insights", "", "red"],
+    [ov.flagged || 0, "order(s) where your agent reported a problem", "/admin/orders", "todo", "red"],
+    [counts.leads, "new lead(s) from your website", "/admin/leads", ""],
     [t.transfers, "bank transfer(s) reported, check your account", "/admin", "", "red"],
     [t.unread, "unread message(s) from stores", "/admin/messages", "", "red"],
     [t.paid, "paid order(s) to send to your agent", "/admin/orders", "todo", "red"],
@@ -965,7 +1121,7 @@ async function adminOrders() {
         <td>${esc(o.clients?.name)}</td>
         <td class="small">${esc(o.customer_name || "")}<br>${esc([o.shipping_address?.address1, o.shipping_address?.zip, o.shipping_address?.city].filter(Boolean).join(", "))}<br>${esc(o.country || "")}</td>
         <td class="small">${items(o.line_items)}</td>
-        <td>${pill(o.status)}${o.status_note ? `<div class="muted small" style="max-width:200px">${esc(o.status_note)}</div>` : ""}</td>
+        <td>${pill(o.status)}${o.status_note ? `<div class="muted small" style="max-width:200px">${esc(o.status_note)}</div>` : ""}${o.agent_note ? `<div class="small" style="max-width:200px;color:var(--red)">⚠ Agent: ${esc(o.agent_note)}</div>` : ""}${o.actual_cost != null ? `<div class="muted small">real cost ${eur(o.actual_cost)}</div>` : ""}</td>
         <td class="num">${eur(o.price_total)}<div class="muted small">${eur(o.agent_cost)}</div></td>
         <td style="min-width:170px"><input class="sm" name="tn" placeholder="Tracking number" value="${esc(o.tracking_number || "")}" style="margin-bottom:4px">
           <input name="tc" placeholder="Carrier" value="${esc(o.tracking_company || "")}" style="margin-bottom:4px"><input name="tu" placeholder="Tracking URL" value="${esc(o.tracking_url || "")}"></td>
@@ -975,6 +1131,8 @@ async function adminOrders() {
           ${["paid", "sent_to_agent"].includes(o.status) ? `<button class="sm" data-act="ship">Ship + tracking</button>` : ""}
           ${["paid", "sent_to_agent"].includes(o.status) ? `<button class="sm ghost" data-act="address">Address problem</button>` : ""}
           <button class="sm ghost" data-act="chat">Chat</button>
+          <button class="sm ghost" data-act="photos">QC photos</button>
+          ${o.agent_note ? `<button class="sm ghost" data-act="unflag">Clear agent note</button>` : ""}
           ${!["cancelled", "shipped", "delivered"].includes(o.status) ? `<button class="sm ghost" data-act="cancel">Cancel / refund</button>` : ""}
         </div></td></tr>`).join("")}</table></div>` : `<div class="empty">Nothing here.</div>`}</div>`, counts);
   document.querySelectorAll("[data-f]").forEach((b) => (b.onclick = () => { orderFilter = b.dataset.f; adminOrders(); }));
@@ -992,6 +1150,18 @@ async function adminOrders() {
   document.querySelectorAll("[data-o] [data-act]").forEach((b) => (b.onclick = async () => {
     const tr = b.closest("[data-o]"), id = tr.dataset.o, act = b.dataset.act; b.disabled = true;
     try {
+      if (act === "photos") {
+        const o = os.find((x) => x.id === id); b.disabled = false;
+        dlg.className = "wide";
+        dlg.innerHTML = `<div class="row" style="justify-content:space-between"><h2>QC photos · ${esc(o.order_number || "")}</h2><button class="ghost sm" id="qcClose">Close</button></div>
+          <div id="qcG" class="muted small" style="margin:10px 0">Loading…</div><label class="btn ghost sm" style="cursor:pointer">+ Add photos<input type="file" accept="image/*" multiple hidden id="qcUp"></label>`;
+        dlg.onclose = () => (dlg.className = "");
+        dlg.showModal(); document.getElementById("qcClose").onclick = () => dlg.close();
+        const load = async () => { document.getElementById("qcG").innerHTML = (await qcGallery({ orderId: id })) || "No photos yet."; };
+        load(); document.getElementById("qcUp").onchange = async (e) => { if (await uploadQc([...e.target.files], { clientId: o.client_id, orderId: id })) load(); };
+        return;
+      }
+      if (act === "unflag") { await rpc("agent_update_order", { p_order: id, p_action: "flag", p_note: "" }); toast("Agent note cleared"); }
       if (act === "chat") { const o = os.find((x) => x.id === id); b.disabled = false; return openThread({ orderId: id, clientId: o.client_id, title: `Order ${o.order_number || ""} · ${o.clients?.name || ""}`, onClose: adminOrders }); }
       if (act === "address") {
         const r = await ask({ title: "Address problem", body: "The store sees this and can correct the address in their portal. The order stops until then.", fields: [{ name: "note", label: "What is wrong?", value: "House number missing", required: true }], ok: "Send to store" });
@@ -1039,6 +1209,64 @@ async function manualOrder() {
     line_items: [{ title: r.product, quantity: Number(r.qty) || 1 }] }).select("id").single();
   if (error) return toast(error.message, true);
   const s = await rpc("admin_retry_order", { p_order: data.id }); toast("Order created: " + s); adminOrders();
+}
+async function adminLeads() {
+  loading("/admin/leads");
+  const [{ data: ls, error }, counts] = await Promise.all([sb.from("leads").select("*").order("created_at", { ascending: false }).limit(300), adminCounts()]);
+  if (error) return toast(error.message, true);
+  const signup = `${location.origin}${location.pathname}#/signup`;
+  shell("/admin/leads", `<div class="head"><div><h1>Leads</h1><p class="muted" style="margin:4px 0 0">Free price check requests from your website. Reply within 24 hours, as the site promises.</p></div>
+      <button class="ghost" id="lCsv">Export (CSV)</button></div>
+    <div class="card">${ls.length ? `<div class="scroll"><table class="tbl"><tr><th>When</th><th>Email</th><th>Store</th><th>Orders/day</th><th>Status</th><th></th></tr>
+      ${ls.map((l) => `<tr><td class="small">${ago(l.created_at)}</td><td>${l.email ? `<a href="mailto:${esc(l.email)}?subject=${encodeURIComponent("Your Shipdao price check")}&body=${encodeURIComponent(`Hi,\n\nThanks for your request. Create your free account here and connect your store, then we price your products within 24 hours:\n${signup}\n\n`)}">${esc(l.email)}</a>` : "–"}</td>
+        <td>${l.store_url ? link(/^https?:/.test(l.store_url) ? l.store_url : "https://" + l.store_url, l.store_url) : "–"}</td><td>${esc(l.orders_per_day || "–")}</td>
+        <td><select data-ls="${l.id}" style="width:auto">${["new", "contacted", "won", "lost"].map((s) => `<option ${l.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></td>
+        <td class="small muted">${l.message ? esc(l.message) : ""}</td></tr>`).join("")}</table></div>`
+      : `<div class="empty">No leads yet. They arrive here when someone fills in the price check on your Framer site.</div>`}</div>`, counts);
+  document.querySelectorAll("[data-ls]").forEach((s) => (s.onchange = async () => { const { error: e } = await sb.from("leads").update({ status: s.value }).eq("id", s.dataset.ls); e ? toast(e.message, true) : toast("Saved"); }));
+  document.getElementById("lCsv").onclick = () => ls.length ? downloadCsv("shipdao-leads.csv", ["Date", "Email", "Store", "Orders/day", "Status", "Message"], ls.map((l) => [l.created_at.slice(0, 10), l.email, l.store_url, l.orders_per_day, l.status, l.message])) : toast("No leads", true);
+}
+async function adminInsights() {
+  loading("/admin/insights");
+  const [health, margins, agents, counts] = await Promise.all([rpc("admin_health"), rpc("admin_margins", { p_days: 60 }), rpc("admin_list_agents"), adminCounts()]);
+  const mt = margins.totals, join = `${location.origin}${location.pathname}#/join`;
+  const stale = (d) => !d || Date.now() - new Date(d) > 3 * 864e5;
+  shell("/admin/insights", `<div class="head"><div><h1>Insights</h1><p class="muted" style="margin:4px 0 0">Your agent team, real margins and whether every connection is working.</p></div></div>
+    <div class="card"><h3>System health</h3>
+      ${health.shops.length ? `<div class="scroll"><table class="tbl" style="margin-top:8px"><tr><th>Store</th><th>Client</th><th>Connection</th><th>Last webhook</th><th>Last order</th><th class="num">Errors 24h</th></tr>
+        ${health.shops.map((s) => `<tr><td>${esc(s.shop_domain)}</td><td>${esc(s.client)}</td>
+          <td>${s.status !== "active" ? pill("uninstalled") : !s.has_token ? pill("issue") : s.can_read_products ? pill("connected") : `<span class="pill p-on_hold">reconnect for products</span>`}</td>
+          <td class="small" style="color:${s.status === "active" && stale(s.last_ok) ? "var(--amber)" : "inherit"}">${s.last_ok ? ago(s.last_ok) : "never"}</td><td class="small">${s.last_order ? ago(s.last_order) : "–"}</td>
+          <td class="num" style="color:${s.failures_24h ? "var(--red)" : "inherit"}">${s.failures_24h}</td></tr>`).join("")}</table></div>` : `<p class="muted small">No stores connected yet.</p>`}
+      ${health.failures.length ? `<h3 style="margin-top:16px">Recent errors</h3><table class="tbl" style="margin-top:8px"><tr><th>When</th><th>Source</th><th>What</th><th>Detail</th></tr>
+        ${health.failures.map((f) => `<tr><td class="small">${ago(f.created_at)}</td><td>${esc(f.source)}</td><td class="small">${esc(f.topic || "")} ${esc(f.shop || "")}</td><td class="small" style="color:var(--red)">${esc(f.detail || "")}</td></tr>`).join("")}</table>
+        <p class="muted small">“invalid HMAC signature” means SHOPIFY_API_SECRET in Supabase does not match your Shopify app.</p>` : `<p class="muted small" style="margin-top:10px">No errors in the last 7 days. ${health.events_24h} event(s) handled in the last 24 hours.</p>`}</div>
+
+    <div class="card" style="margin-top:16px"><h3>Real margins (last 60 days)</h3><p class="muted small">What your agent really paid, against the cost you priced in. Your agent fills in the cost when shipping.</p>
+      <div class="grid g4" style="margin-top:10px">
+        <div class="stat"><div class="k">Orders with real cost</div><div class="v">${mt.orders}</div></div>
+        <div class="stat"><div class="k">Priced-in cost</div><div class="v">${eur(mt.expected)}</div></div>
+        <div class="stat"><div class="k">Real cost</div><div class="v" style="color:${mt.actual > mt.expected ? "var(--red)" : "inherit"}">${eur(mt.actual)}</div></div>
+        <div class="stat"><div class="k">Real profit</div><div class="v">${eur(mt.charged - mt.actual)}</div></div></div>
+      ${mt.missing_cost ? `<p class="small" style="color:var(--amber)">${mt.missing_cost} shipped order(s) have no real cost yet.</p>` : ""}
+      ${margins.orders.filter((o) => o.diff > 0.01).length ? `<table class="tbl" style="margin-top:8px"><tr><th>Order</th><th>Client</th><th>Items</th><th class="num">Priced in</th><th class="num">Real</th><th class="num">Difference</th></tr>
+        ${margins.orders.filter((o) => o.diff > 0.01).slice(0, 25).map((o) => `<tr><td>${esc(o.order_number || "")}</td><td>${esc(o.client)}</td><td class="small">${items(o.line_items)}</td><td class="num">${eur(o.expected)}</td><td class="num">${eur(o.actual)}</td><td class="num" style="color:var(--red)">+${eur(o.diff)}</td></tr>`).join("")}</table>
+        <p class="muted small">Costs went up on these orders. Update the product cost under Products so new orders are priced right.</p>` : mt.orders ? `<p class="muted small" style="margin-top:8px">No order cost more than priced in. 👍</p>` : ""}</div>
+
+    <div class="card" style="margin-top:16px"><h3>Agent team</h3><p class="muted small">Invite your agent by email, then send them this link to create their account: <b>${esc(join)}</b>. Agents see paid orders, addresses and supplier links, never your prices or margins.</p>
+      <form id="agInvite" class="row" style="margin:10px 0"><input name="email" type="email" placeholder="agent@email.com" required style="max-width:280px"><button>Invite agent</button></form>
+      ${agents.length ? `<table class="tbl"><tr><th>Email</th><th>Account</th><th>Last login</th><th></th></tr>${agents.map((a) => `<tr><td>${esc(a.email)}</td><td>${a.has_account ? pill("active") : `<span class="pill p-on_hold">invited</span>`}</td><td class="small">${a.last_sign_in ? ago(a.last_sign_in) : "–"}</td>
+        <td class="num"><button class="sm ghost" data-rmagent="${esc(a.email)}">Remove</button></td></tr>`).join("")}</table>` : `<p class="muted small">No agents yet.</p>`}</div>`, counts);
+  document.getElementById("agInvite").onsubmit = (e) => { e.preventDefault(); const f = e.target; busy(submitBtn(f), async () => {
+    const r = await rpc("admin_set_agent", { p_email: f.email.value, p_enabled: true });
+    toast(r.has_account ? "Agent access granted" : "Invited. Send them the join link.");
+    try { await navigator.clipboard.writeText(join); toast("Join link copied"); } catch {}
+    adminInsights();
+  }); };
+  document.querySelectorAll("[data-rmagent]").forEach((b) => (b.onclick = async () => {
+    if (!(await confirmAsk("Remove agent?", `${b.dataset.rmagent} loses access straight away.`, "Remove"))) return;
+    await rpc("admin_set_agent", { p_email: b.dataset.rmagent, p_enabled: false }); adminInsights();
+  }));
 }
 async function adminMessages() {
   loading("/admin/messages");
@@ -1219,24 +1447,26 @@ async function adminClients() {
 // ===== ROUTER =====
 const routes = {
   client: { "/": clientOverview, "/orders": clientOrders, "/quotes": clientQuotes, "/products": clientProducts, "/balance": clientBalance, "/connect": clientConnect, "/account": clientAccount },
-  admin: { "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/messages": adminMessages, "/admin/clients": adminClients },
+  agent: { "/agent": () => agentOrders(false), "/agent/shipped": () => agentOrders(true) },
+  admin: { "/admin/leads": adminLeads, "/admin/insights": adminInsights, "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/messages": adminMessages, "/admin/clients": adminClients },
 };
 async function route() {
   const [h, q] = location.hash.replace(/^#/, "").split("?");
   const scroll = new URLSearchParams(q || "").get("s");
   if (PUBLIC[h]) return PUBLIC[h]();
   if (!ME) {
-    if (["/login", "/signup", "/reset"].includes(h)) return renderAuth(h.slice(1));
+    if (["/login", "/signup", "/reset", "/join"].includes(h)) return renderAuth(h.slice(1));
     if (CONFIG.SITE_URL) return renderAuth("login");
     return landingPage(scroll);
   }
-  if (["/login", "/signup", "/reset"].includes(h) || ((h === "/" || h === "") && scroll)) {
+  if (["/login", "/signup", "/reset", "/join"].includes(h) || ((h === "/" || h === "") && scroll)) {
     if (scroll) return CONFIG.SITE_URL ? (location.href = CONFIG.SITE_URL) : landingPage(scroll);
     location.hash = ""; return;
   }
-  const path = location.hash.replace(/^#/, "") || (ME.role === "admin" ? "/admin" : "/");
-  const table = routes[ME.role === "admin" ? "admin" : "client"];
-  const fn = table[path] || table[ME.role === "admin" ? "/admin" : "/"];
+  const home = { admin: "/admin", agent: "/agent" }[ME.role] || "/";
+  const path = location.hash.replace(/^#/, "") || home;
+  const table = routes[ME.role] || routes.client;
+  const fn = table[path] || table[home];
   try { await fn(); } catch (e) {
     console.error(e);
     const main = document.getElementById("main");

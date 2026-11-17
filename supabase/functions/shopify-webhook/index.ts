@@ -35,7 +35,13 @@ Deno.serve(async (req) => {
 
   const raw = await req.text();
   const given = req.headers.get("X-Shopify-Hmac-Sha256") ?? "";
-  if (!safeEqual(await hmacBase64(secret, raw), given)) return new Response("Unauthorized", { status: 401 });
+  if (!safeEqual(await hmacBase64(secret, raw), given)) {
+    // a wrong signature usually means SHOPIFY_API_SECRET does not match the app; record it so it shows up in Health
+    const a = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    await a.from("system_events").insert({ source: "shopify", shop: (req.headers.get("X-Shopify-Shop-Domain") ?? "").toLowerCase() || null,
+      topic: req.headers.get("X-Shopify-Topic"), ok: false, detail: "invalid HMAC signature" }).then(() => {}, () => {});
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const topic = (req.headers.get("X-Shopify-Topic") ?? "").toLowerCase();
   const shop = (req.headers.get("X-Shopify-Shop-Domain") ?? "").toLowerCase();
@@ -44,31 +50,33 @@ Deno.serve(async (req) => {
   try { payload = JSON.parse(raw); } catch { return new Response("Bad JSON", { status: 400 }); }
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const log = (ok: boolean, detail?: string) =>
+    admin.from("system_events").insert({ source: "shopify", shop, topic, ok, detail: detail?.slice(0, 500) ?? null }).then(() => {}, () => {});
   let result: unknown = null;
 
   switch (topic) {
     case "orders/create": {
       const { data, error } = await admin.rpc("service_ingest_order", { p_shop: shop, p_payload: payload });
-      if (error) { console.error("ingest", error); return new Response("Error", { status: 500 }); } // Shopify retries
+      if (error) { console.error("ingest", error); await log(false, error.message); return new Response("Error", { status: 500 }); } // Shopify retries
       result = data;
       break;
     }
     case "orders/paid": {
       const { data, error } = await admin.rpc("service_order_paid", { p_shop: shop, p_payload: payload });
-      if (error) { console.error("paid", error); return new Response("Error", { status: 500 }); }
+      if (error) { console.error("paid", error); await log(false, error.message); return new Response("Error", { status: 500 }); }
       result = data;
       break;
     }
     case "orders/cancelled": {
       const { data, error } = await admin.rpc("service_order_cancelled", { p_shop: shop, p_payload: payload });
-      if (error) { console.error("cancelled", error); return new Response("Error", { status: 500 }); }
+      if (error) { console.error("cancelled", error); await log(false, error.message); return new Response("Error", { status: 500 }); }
       result = data;
       break;
     }
     case "products/create":
     case "products/update": {
       const { data, error } = await admin.rpc("service_upsert_products", { p_shop: shop, p_items: productItems(payload, shop) });
-      if (error) { console.error("products", error); return new Response("Error", { status: 500 }); }
+      if (error) { console.error("products", error); await log(false, error.message); return new Response("Error", { status: 500 }); }
       result = data;
       break;
     }
@@ -91,5 +99,6 @@ Deno.serve(async (req) => {
       console.log("data request for", shop);
       break;
   }
+  await log(true);
   return new Response(JSON.stringify({ ok: true, result }), { headers: { "Content-Type": "application/json" } });
 });
