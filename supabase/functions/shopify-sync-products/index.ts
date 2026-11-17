@@ -13,13 +13,15 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
+// Shopify allows at most 1000 cost points per query: products × variants must stay under it.
+// 10 products × (80 variants + a few fields) ≈ 850 points.
 const QUERY = `query($cursor: String) {
-  products(first: 50, after: $cursor) {
+  products(first: 10, after: $cursor) {
     pageInfo { hasNextPage endCursor }
     nodes {
       legacyResourceId title handle status onlineStoreUrl
       featuredMedia { preview { image { url } } }
-      variants(first: 100) { nodes { legacyResourceId title sku price } }
+      variants(first: 80) { nodes { legacyResourceId title sku price } }
     }
   }
 }`;
@@ -34,7 +36,7 @@ async function syncShop(admin: ReturnType<typeof createClient>, shopId: string) 
 
   const items: Item[] = [];
   let cursor: string | null = null;
-  for (let page = 0; page < 200; page++) {
+  for (let page = 0; page < 400; page++) { // up to 4000 products
     const r = await fetch(`https://${info.shop_domain}/admin/api/${API_VERSION}/graphql.json`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": info.access_token },
