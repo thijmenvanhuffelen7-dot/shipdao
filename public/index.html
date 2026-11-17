@@ -97,7 +97,7 @@ dialog::backdrop{background:rgba(30,21,18,.35)}
 .pnav .links{display:flex;gap:18px;margin-left:auto;font-size:14px}.pnav .links a{color:var(--ink2);text-decoration:none}.pnav .links a:hover{color:var(--ink)}
 .pnav .cta{display:flex;gap:8px}.pnav .cta a{text-decoration:none}
 @media(max-width:900px){.pnav .links{display:none}.pnav .cta{margin-left:auto}}
-.sec{max-width:1120px;margin:0 auto;padding:72px 20px}.sec.tight{padding-top:24px}
+.psec{max-width:1120px;margin:0 auto;padding:72px 20px}.psec.tight{padding-top:24px}
 .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:10px}
 .hero{padding:88px 20px 40px;text-align:center;max-width:860px;margin:0 auto}.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.08}
 .hero p{font-size:18px;color:var(--ink2);max-width:640px;margin:18px auto 28px}
@@ -342,28 +342,28 @@ function landingPage(scroll) {
       <p>Sourcing, quality checks, packing and shipping from China for European webshops. Connect Shopify in one click and see every price, order and euro in one portal.</p>
       <div class="row" style="justify-content:center"><a class="btn lg red" href="#/signup">Create a free account</a>${CONFIG.BOOKING_URL ? `<a class="btn lg ghost" href="${esc(safeUrl(CONFIG.BOOKING_URL))}" target="_blank" rel="noopener">Book a call</a>` : `<a class="btn lg ghost" href="#/?s=how">How it works</a>`}</div>
     </section>${inkHills}
-    <section class="sec" id="how"><div class="eyebrow">How it works</div><h2 class="big">Live the same day.</h2>
+    <section class="psec" id="how"><div class="eyebrow">How it works</div><h2 class="big">Live the same day.</h2>
       <div class="steps">
         <div class="card step"><div class="n">01</div><h3>Connect Shopify</h3><p>Sign up and connect your store with one click. All your products and variants come in automatically.</p></div>
         <div class="card step"><div class="n">02</div><h3>We price everything</h3><p>We find the supplier and give every product one all-in price. You see it in your portal, next to what you keep.</p></div>
         <div class="card step"><div class="n">03</div><h3>Top up your balance</h3><p>iDEAL, Bancontact or card. Your balance updates in seconds.</p></div>
         <div class="card step"><div class="n">04</div><h3>Orders ship themselves</h3><p>New orders are paid from your balance, packed and shipped. Tracking goes straight back to Shopify.</p></div>
       </div></section>
-    ${guarantees.length ? `<section class="sec tight" id="guarantees"><div class="eyebrow">Guarantees</div><h2 class="big">What we promise. In writing.</h2>
+    ${guarantees.length ? `<section class="psec tight" id="guarantees"><div class="eyebrow">Guarantees</div><h2 class="big">What we promise. In writing.</h2>
       <p class="muted" style="max-width:620px">These are in our terms, not just on this page.</p>
       <div class="grid g3" style="margin-top:24px">${guarantees.map(([v, t, d]) => `<div class="card"><div class="big" style="font-size:34px">${v}</div><h3 style="margin:6px 0">${t}</h3><p class="muted small" style="margin:0">${d}</p></div>`).join("")}</div></section>` : ""}
-    <section class="sec tight" id="difference"><div class="eyebrow">The difference</div><h2 class="big">Most agents run on WhatsApp and Excel.</h2>
+    <section class="psec tight" id="difference"><div class="eyebrow">The difference</div><h2 class="big">Most agents run on WhatsApp and Excel.</h2>
       <div class="scroll"><table class="cmp"><tr><th></th><th>The usual agent</th><th>Shipdao</th></tr>
         ${rows.map(([k, a, b]) => `<tr><td><b>${k}</b></td><td class="no">✕ ${a}</td><td class="us">✓ ${b}</td></tr>`).join("")}</table></div></section>
-    <section class="sec tight faq" id="faq"><div class="eyebrow">FAQ</div><h2 class="big">What store owners ask first.</h2>
+    <section class="psec tight faq" id="faq"><div class="eyebrow">FAQ</div><h2 class="big">What store owners ask first.</h2>
       <div style="margin-top:18px;max-width:820px">${faq.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}</div></section>
-    <section class="sec tight"><div class="band"><h2>Ready to stop chasing your supplier?</h2><p>Create an account, connect your store and see your prices.</p>
+    <section class="psec tight"><div class="band"><h2>Ready to stop chasing your supplier?</h2><p>Create an account, connect your store and see your prices.</p>
       <a class="btn lg red" href="#/signup" style="margin-top:10px">Get started</a></div></section>`, { scroll });
 }
 function partnersPage() {
   publicShell(`<section class="hero"><div class="eyebrow">For coaches, communities and creators</div><h1>Your students sell.<br>We ship. You earn.</h1>
       <p>Send the stores you mentor to a fulfilment partner you can vouch for, and earn on every order they ship, for as long as they ship.</p></section>
-    <section class="sec tight"><div class="grid g3">
+    <section class="psec tight"><div class="grid g3">
       <div class="card"><div class="eyebrow">What your students get</div><h3>The same deal as everyone</h3><p class="muted small">One-click Shopify connection, all-in prices per product, iDEAL top-ups and tracking straight to their store. No lock-in.</p></div>
       <div class="card"><div class="eyebrow">What you get</div><h3>${has(CONFIG.PARTNER_COMMISSION) ? `${esc(CONFIG.PARTNER_COMMISSION)} per order` : "A cut of every order"}</h3><p class="muted small">${has(CONFIG.PARTNER_COMMISSION) ? "On every order your students ship, every month, not a one-off bounty." : "A recurring commission per order, not a one-off bounty. We go through the numbers with you."}</p></div>
       <div class="card"><div class="eyebrow">You stay in the loop</div><h3>Know how they are doing</h3><p class="muted small">Regular updates on the stores you sent, so you can help them where it counts.</p></div></div>
