@@ -4,7 +4,8 @@ Edit the texts here, run `python3 tools/build_site.py`, commit. Cloudflare publi
 import html, pathlib
 OUT = pathlib.Path(__file__).resolve().parent.parent / "site"
 E = html.escape
-EMAIL = "hello@shipdao.eu"
+EMAIL = "hello@shipdao.nl"
+COMPANY = "Shipdao is a trade name of Ecom Thijmen · Brugstraat 4, Heerde, Netherlands · KvK 97815845 · VAT NL005289760B27"
 
 def head(title, desc, path):
     return f"""<!doctype html>
@@ -33,6 +34,7 @@ FOOT = f"""<footer class="foot"><div class="wrap">
 <div><h4>Contact</h4><a href="mailto:{EMAIL}">{EMAIL}</a><a href="#" data-wa>WhatsApp</a></div>
 <div><h4>Get started</h4><a href="/#contact">Free price check</a><a href="#" data-portal="/#/signup">Create an account</a></div>
 </div>
+<p class="small muted" style="margin-top:28px">{COMPANY}</p>
 <div class="fbottom"><span>© 2026 Shipdao</span><span><a href="#" data-portal="/#/terms">Terms and conditions</a><a href="#" data-portal="/#/privacy">Privacy policy</a></span></div>
 </div></footer>
 <script src="/assets/site.js" defer></script>
@@ -57,7 +59,7 @@ PLANS = [("Fulfilment", "For dropshippers with a winning product.", ["Sourcing a
 FAQ = [("Which countries do you ship to?", "We ship worldwide. Tell us where your customers are and your quote shows the route and delivery time per country."),
        ("Do I need to buy stock?", "No. We buy per order, so you can start with zero stock. When a product sells steadily, bulk stock can lower your cost."),
        ("How fast do orders ship and arrive?", "It depends on the product and the route. Your quote shows the expected processing and delivery time per country, and tracking is synced to your Shopify store."),
-       ("What if a parcel is lost or damaged?", "Tell us with the order number and, for damage, a photo. We then reship it or credit your balance, as set out in our terms."),
+       ("What if a parcel is lost or damaged?", "No delivery scan 30 days after shipping? Tell us and we reship it or credit the order price to your balance. Damaged or wrong item: send photos within 14 days of delivery."),
        ("I use AliExpress or CJ now. How do I switch?", "Send your product links and we quote an all-in price. If we beat what you pay now on price or speed, we connect your Shopify and new orders run through us."),
        ("How does paying work?", "You top up a balance and every order is paid from it. No contract and no subscription, so you can stop whenever you want."),
        ("How do VAT, duties and customs work?", "Duties and VAT are prepaid wherever possible, so your customer never pays at the door."),
@@ -172,7 +174,7 @@ CH = [
  ("tracking", "Shipping and tracking", "From our warehouse to your customer’s door.", [
   ("Tracking goes to Shopify", [("p", "When an order ships, the tracking number appears in your portal and in Shopify, and Shopify emails your customer. You do not have to do anything.")], None),
   ("“Where is my order?”", [("p", "Search the order number under Orders and send your customer the tracking link. Delivery time depends on the product and the route; your quote shows it per country.")], None),
-  ("Lost or damaged", [("p", "Tell us with the order number and, for damage, a photo. We reship it or credit your balance, as set out in our terms.")], None)]),
+  ("Lost or damaged", [("p", "No delivery scan 30 days after shipping? Message us with the order number and we reship it or credit the order price to your balance. Damaged or wrong item: send photos within 14 days of delivery.")], None)]),
  ("quality", "Quality checks and messages", "See what goes in the box, and talk to us about it.", [
   ("Quality-check photos", [("p", "Our team photographs what goes in the box. The photos appear with the order in your portal, so you see what your customer will get.")], None),
   ("Messages", [("p", "Every order and every product has its own chat with us, so the conversation stays with the thing it is about. A red dot in the menu means something is waiting for you.")], None)]),

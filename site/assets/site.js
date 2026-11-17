@@ -49,6 +49,6 @@ form?.addEventListener("submit", async (e) => {
     btn.style.display = "none"; ok.style.display = "block";
   } catch {
     btn.disabled = false; btn.textContent = "Send my price check";
-    alert("Something went wrong. Please email us at hello@shipdao.eu");
+    alert("Something went wrong. Please email us at hello@shipdao.nl");
   }
 });
