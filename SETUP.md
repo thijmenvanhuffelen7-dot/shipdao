@@ -6,10 +6,14 @@ Wat nog moet gebeuren kan alleen jij doen (accounts en geheime sleutels).
 ## 1. Online zetten: Framer (site) + Vercel (portal)
 Opzet:
 - `shipdao.nl` → **Framer**: je publieke site (home, how it works, FAQ, partners)
-- `app.shipdao.nl` → **Vercel**: de portal (`index.html`), login en dashboard
+- `app.shipdao.nl` → **Cloudflare** (Workers) of Vercel: de portal (`public/index.html`), login en dashboard
 - **Supabase** blijft de backend: database, betalingen, Shopify
 
-**Vercel**
+**Cloudflare (aanrader, gratis en commercieel gebruik mag)**
+1. dash.cloudflare.com → Workers & Pages → Create → Import a repository → `shipdao`. `wrangler.jsonc` in de repo zegt: alleen de map `public/` gaat online.
+2. Settings → Domains & Routes: zet de workers.dev-URL aan, en voeg `app.shipdao.nl` toe als Custom domain (daarvoor moet `shipdao.nl` bij Cloudflare in beheer zijn: nameservers omzetten bij je registrar).
+
+**Of Vercel** (let op: gratis plan alleen niet-commercieel)
 1. vercel.com → inloggen met GitHub → *Add New → Project* → kies `shipdao`.
 2. Framework preset: **Other**. Build command: leeg. Output directory: leeg (`.`).
 3. Deploy. `vercel.json` en `.vercelignore` zitten al in de repo (beveiligingsheaders; database-bestanden en notities gaan niet online).
@@ -19,7 +23,7 @@ Opzet:
 **Framer**
 1. Publiceer je Framer-site op `shipdao.nl`.
 2. Knoppen "Log in" → `https://app.shipdao.nl/#/login`, "Get started" → `https://app.shipdao.nl/#/signup`.
-3. In `index.html`: zet `CONFIG.SITE_URL = "https://shipdao.nl"`. De portal toont dan geen eigen homepage meer maar meteen de login, en het logo linkt naar Framer.
+3. In `public/index.html`: zet `CONFIG.SITE_URL = "https://shipdao.nl"`. De portal toont dan geen eigen homepage meer maar meteen de login, en het logo linkt naar Framer.
 4. Link vanuit Framer naar de juridische pagina's in de portal: `https://app.shipdao.nl/#/terms`, `#/privacy`, `#/dpa` (die moeten bij de portal blijven vanwege de aanmeldcheckbox).
 
 Noteer de portal-URL (`https://app.shipdao.nl`), die heb je hieronder nodig.
@@ -39,7 +43,7 @@ Shopify Partners (partners.shopify.com) → Apps → Create app → handmatig.
 
 ## 3. Mollie (online opwaarderen)
 1. Maak een account op mollie.com. Je hebt een **KvK-nummer** nodig, plus een ID-check en een zakelijke rekening (of je privérekening als eenmanszaak).
-2. Mollie controleert je website. Daarvoor moeten je bedrijfsgegevens, voorwaarden en privacyverklaring zichtbaar zijn. Die pagina's zitten al in de portal; vul alleen `CONFIG.COMPANY` bovenin `index.html` in.
+2. Mollie controleert je website. Daarvoor moeten je bedrijfsgegevens, voorwaarden en privacyverklaring zichtbaar zijn. Die pagina's zitten al in de portal; vul alleen `CONFIG.COMPANY` bovenin `public/index.html` in.
 3. Zet iDEAL (en eventueel Bancontact en creditcard) aan onder *Betaalmethodes*.
 4. Kopieer je API-key: eerst `test_...` om te testen, daarna `live_...`.
 
@@ -69,7 +73,7 @@ Supabase → Edge Functions → Secrets:
 
 ## Checklist voordat je live gaat
 - [ ] Ingeschreven bij de KvK en btw-nummer ontvangen
-- [ ] `CONFIG.COMPANY` in `index.html` ingevuld (anders zie je als admin een gele waarschuwing)
+- [ ] `CONFIG.COMPANY` in `public/index.html` ingevuld (anders zie je als admin een gele waarschuwing)
 - [ ] Voorwaarden en privacyverklaring doorgelezen. Kloppen de 30 dagen voor verloren pakketten en de aansprakelijkheid voor jou? Laat ze bij twijfel checken.
 - [ ] Met je agent of magazijn in China de **standaardcontractbepalingen (SCC's)** afgesproken. Je stuurt adressen van EU-consumenten naar China, en dat mag alleen met zo'n afspraak.
 - [ ] Mollie goedgekeurd, `MOLLIE_API_KEY` vervangen door de `live_`-key

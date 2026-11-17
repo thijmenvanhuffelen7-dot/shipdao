@@ -1,0 +1,9 @@
+// Cloudflare Workers: serve only the portal in ./public (database files and notes stay offline)
+{
+  "name": "shipdao",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  }
+}
