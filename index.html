@@ -24,7 +24,7 @@ button,.btn{font:500 14px var(--sans);border:1px solid var(--ink);background:var
 button:hover{opacity:.85} button:disabled{opacity:.4;cursor:default}
 button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
 button.ghost:hover{border-color:var(--ink);opacity:1}
-button.red{background:var(--red);border-color:var(--red)}
+button.red,.btn.red{background:var(--red);border-color:var(--red);color:#fff}
 button.sm{padding:5px 12px;font-size:13px}
 input,select,textarea{font:14px var(--sans);color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:transparent}
@@ -91,6 +91,36 @@ dialog::backdrop{background:rgba(30,21,18,.35)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{background:transparent;color:var(--ink2);border-color:var(--line)}
 .chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pub{min-height:100vh;background:var(--paper)}
+.pnav{position:sticky;top:0;z-index:20;background:rgba(251,248,243,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.pnav .in{max-width:1120px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
+.pnav .links{display:flex;gap:18px;margin-left:auto;font-size:14px}.pnav .links a{color:var(--ink2);text-decoration:none}.pnav .links a:hover{color:var(--ink)}
+.pnav .cta{display:flex;gap:8px}.pnav .cta a{text-decoration:none}
+@media(max-width:900px){.pnav .links{display:none}.pnav .cta{margin-left:auto}}
+.sec{max-width:1120px;margin:0 auto;padding:72px 20px}.sec.tight{padding-top:24px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:10px}
+.hero{padding:88px 20px 40px;text-align:center;max-width:860px;margin:0 auto}.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.08}
+.hero p{font-size:18px;color:var(--ink2);max-width:640px;margin:18px auto 28px}
+.btn.lg,button.lg{padding:13px 24px;font-size:15px}a.btn{text-decoration:none;display:inline-block}a.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.ink{display:block;width:100%;height:120px;color:var(--line)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:32px}@media(max-width:900px){.steps{grid-template-columns:1fr 1fr}}@media(max-width:560px){.steps{grid-template-columns:1fr}}
+.step .n{font:400 34px var(--serif);color:var(--red)}.step h3{margin:8px 0 6px}.step p{color:var(--ink2);font-size:14px;margin:0}
+.big{font:400 40px var(--serif);color:var(--ink)}
+.cmp{width:100%;border-collapse:collapse;margin-top:28px;font-size:14px}.cmp th,.cmp td{padding:14px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.cmp th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}.cmp td.us{background:var(--green-soft)}.cmp .no{color:var(--muted)}
+.faq details{border-bottom:1px solid var(--line);padding:16px 0}.faq summary{cursor:pointer;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:12px}.faq summary::after{content:"+";color:var(--muted)}.faq details[open] summary::after{content:"–"}
+.faq details p{color:var(--ink2);margin:10px 0 0}
+.band{background:var(--ink);color:#fff;border-radius:20px;padding:48px 32px;text-align:center}.band h2{color:#fff;font-size:30px}.band p{color:rgba(255,255,255,.7)}
+.pfoot{border-top:1px solid var(--line);margin-top:40px}.pfoot .in{max-width:1120px;margin:0 auto;padding:36px 20px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:24px;font-size:14px;color:var(--ink2)}
+.pfoot a.brand{display:flex;margin:0}.pfoot .foot{text-align:left;margin-top:14px}.pfoot .foot a{display:inline;margin:0}
+.pfoot a{color:var(--ink2);display:block;text-decoration:none;margin:3px 0}.pfoot a:hover{color:var(--ink)}.pfoot h4{font:500 12px var(--sans);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
+@media(max-width:700px){.pfoot .in{grid-template-columns:1fr}}
+.docs{display:grid;grid-template-columns:220px 1fr;gap:40px;max-width:1120px;margin:0 auto;padding:40px 20px 60px}
+.docs nav{position:sticky;top:76px;align-self:start;font-size:14px}.docs nav a{display:block;color:var(--ink2);text-decoration:none;padding:4px 0}.docs nav a:hover{color:var(--red)}
+.docs article h2{margin:44px 0 10px;padding-top:10px;border-top:1px solid var(--line)}.docs article h3{margin:22px 0 6px}.docs article p,.docs article li{color:var(--ink2)}
+.docs .num{color:var(--red);font-family:var(--serif);margin-right:8px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;font-size:14px;margin:10px 0}.kv dt{font-weight:500}.kv dd{margin:0;color:var(--ink2)}
+@media(max-width:820px){.docs{grid-template-columns:1fr}.docs nav{position:static}.kv{grid-template-columns:1fr}}
 .legal{max-width:760px;margin:0 auto;padding:40px 20px 80px}.legal h1{margin:18px 0 6px}.legal h2{font-size:19px;margin:26px 0 8px}.legal p,.legal li{color:var(--ink2)}.legal ol,.legal ul{padding-left:20px}
 .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.7}.foot a{color:var(--muted)}
 .amounts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
@@ -119,6 +149,17 @@ const CONFIG = {
     EMAIL: "[support email]",
     COURT: "[city of your district court, e.g. Amsterdam]",
   },
+  // Promises on the public site. Leave a value in [brackets] and that promise is NOT shown.
+  GUARANTEES: {
+    QUOTE_HOURS: 24,            // new product priced within X hours (the portal already says 24)
+    DISPATCH: "[e.g. 48 hours]", // paid orders leave the warehouse within ...
+    TRACKING: "[e.g. 48 hours]", // tracking number in Shopify within ... of dispatch
+    DELIVERY_EU: "[e.g. 8-14 days]",
+    LOST_PARCEL_DAYS: 30,       // same as the terms
+    REFUND_DAYS: 14,            // unused balance back within X days (same as the terms)
+  },
+  BOOKING_URL: "",             // e.g. a Calendly link for "Book a call"
+  PARTNER_COMMISSION: "",      // e.g. "€0.50" per order for referral partners; empty = "we tell you on a call"
   ONLINE_TOPUP: true, // iDEAL / Bancontact / card via Mollie (needs MOLLIE_API_KEY secret in Supabase)
   TOPUP_PRESETS: [50, 100, 250, 500],
   // Bank transfer as a fallback. Leave the [brackets] in and it stays hidden.
@@ -222,16 +263,147 @@ const LEGAL = {
       <li><b>Help.</b> We help you answer requests from your customers (access, deletion). Deletion requests sent through Shopify are processed automatically.</li>
       <li><b>End.</b> When you stop, we delete or anonymise your customers' data within 3 months, except what we must keep by law.</li></ol>`,
 };
-function renderLegal(path) {
-  $root.innerHTML = `<div class="legal"><a href="#" id="legalBack" class="small">← Back</a>${LEGAL[path]()}${footer()}</div>`;
-  document.getElementById("legalBack").onclick = (e) => { e.preventDefault(); history.length > 1 ? history.back() : (location.hash = ""); };
-  window.scrollTo(0, 0);
+// ===== PUBLIC SITE =====
+const G = CONFIG.GUARANTEES;
+const has = (v) => v !== "" && v != null && !isPlaceholder(v);
+const contactLinks = () => [
+  CONFIG.BOOKING_URL ? `<a href="${esc(safeUrl(CONFIG.BOOKING_URL))}" target="_blank" rel="noopener">Book a call</a>` : "",
+  CONFIG.WHATSAPP ? `<a href="https://wa.me/${esc(CONFIG.WHATSAPP)}" target="_blank" rel="noopener">WhatsApp</a>` : "",
+  has(C.EMAIL) ? `<a href="mailto:${esc(C.EMAIL)}">${esc(C.EMAIL)}</a>` : ""].filter(Boolean).join("");
+const sealBrand = `<a href="#/" class="brand" style="text-decoration:none;color:var(--ink)"><div class="seal">道</div>shipdao</a>`;
+const inkHills = `<svg class="ink" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5">
+  <path d="M0 110 C120 70 180 40 260 60 S420 105 520 80 S700 20 800 45 S980 100 1080 70 S1170 50 1200 60"/>
+  <path d="M0 116 C160 95 240 80 340 92 S560 110 660 98 S860 72 960 88 S1120 108 1200 100" opacity=".6"/>
+  <path d="M760 44 l8 -14 l8 14 M772 30 v-8" opacity=".8"/></g></svg>`;
+function publicShell(body, { scroll } = {}) {
+  const logged = !!ME;
+  $root.innerHTML = `<div class="pub"><header class="pnav"><div class="in">${sealBrand}
+      <nav class="links"><a href="#/?s=how">How it works</a><a href="#/?s=guarantees">Guarantees</a><a href="#/?s=difference">The difference</a><a href="#/?s=faq">FAQ</a><a href="#/docs">Docs</a><a href="#/partners">Partners</a></nav>
+      <div class="cta">${logged ? `<a class="btn sm" href="#${ME.role === "admin" ? "/admin" : "/"}" id="toPortal">Open portal</a>` : `<a class="btn sm ghost" href="#/login">Log in</a><a class="btn sm" href="#/signup">Get started</a>`}</div></div></header>
+    ${body}
+    <footer class="pfoot"><div class="in">
+      <div>${sealBrand}<p style="margin:12px 0 0;max-width:360px">Fulfilment from China for European webshops. We source, check, pack and ship. You sell.</p>${footer()}</div>
+      <div><h4>Explore</h4><a href="#/?s=how">How it works</a><a href="#/?s=guarantees">Guarantees</a><a href="#/?s=difference">The difference</a><a href="#/?s=faq">FAQ</a><a href="#/docs">Documentation</a><a href="#/partners">Partners</a><a href="#/privacy">Privacy</a></div>
+      <div><h4>Contact</h4>${contactLinks() || `<span class="muted">Log in to message us</span>`}</div>
+    </div></footer></div>`;
+  const tp = document.getElementById("toPortal");
+  if (tp) tp.onclick = (e) => { e.preventDefault(); location.hash = ""; route(); };
+  if (scroll) setTimeout(() => document.getElementById(scroll)?.scrollIntoView({ behavior: "smooth" }), 30); else window.scrollTo(0, 0);
 }
+function landingPage(scroll) {
+  const guarantees = [
+    has(G.QUOTE_HOURS) && [`${G.QUOTE_HOURS}h`, "Every product priced", `Send us your catalogue or connect your store, and every product has an all-in price within ${G.QUOTE_HOURS} hours.`],
+    has(G.DISPATCH) && [esc(G.DISPATCH), "Out of the warehouse", "Paid orders leave our warehouse in China within this time."],
+    has(G.TRACKING) && [esc(G.TRACKING), "Tracking in Shopify", "The tracking number lands in your store and your customer gets the shipping email automatically."],
+    has(G.DELIVERY_EU) && [esc(G.DELIVERY_EU), "To the door in the EU", "Typical delivery time from dispatch to your customer in Europe."],
+    has(G.LOST_PARCEL_DAYS) && [`${G.LOST_PARCEL_DAYS} days`, "Lost parcel? Our problem", `No delivery scan ${G.LOST_PARCEL_DAYS} days after shipping and we reship or credit the order. It is in our terms.`],
+    has(G.REFUND_DAYS) && [`${G.REFUND_DAYS} days`, "Your balance is yours", `Stop whenever you want. Unused balance is back in your account within ${G.REFUND_DAYS} days.`],
+  ].filter(Boolean);
+  const faq = [
+    ["How does pricing work?", "One all-in price per product (and per variant), covering the product, checks, packing and shipping. You see it in your portal before a single order ships. No subscription, no setup fee."],
+    ["How do I pay?", "You keep a balance with us. Top up in seconds with iDEAL, Bancontact or card, or by bank transfer. Every order is charged from that balance at the agreed price."],
+    ["What if my balance runs out?", "Orders wait in your portal with the reason next to them. The moment you top up, they are charged and go out automatically. Nothing gets lost."],
+    ["Do I have to set up an app or send API keys?", "No. You type your .myshopify.com address and approve the connection in Shopify. One click. Your products are imported right away."],
+    ["Which platforms do you support?", "Shopify. Running something else? Get in touch and we will tell you honestly whether we are a fit yet."],
+    ["What if a product has no price yet?", "Orders for it wait as “missing a price”. As soon as we price that product, the waiting orders are charged and shipped. Different variants can have different prices."],
+    [`What if a parcel gets lost?`, `No delivery scan ${G.LOST_PARCEL_DAYS} days after shipping and we reship it or credit the order price to your balance. Damaged or wrong items: send photos within 14 days.`],
+    ["Is there a contract or lock-in?", `No. You can stop at any time. Paid orders still ship and your unused balance is refunded within ${G.REFUND_DAYS} days.`],
+    ["What about VAT, customs and IOSS?", "That depends on your products and how your store is set up. We go through it with you when we price your catalogue, so you know what is included before you sell."],
+    ["What do you do with my customers’ data?", "Only what is needed to ship their order, under a data processing agreement you accept when you sign up. No selling, no marketing. See our privacy statement."],
+  ];
+  const rows = [
+    ["Connecting your store", "Create a custom app, send API keys by email", "One click, products imported automatically"],
+    ["Your prices", "In a chat or a spreadsheet somewhere", "Live in your portal, per product and variant"],
+    ["Topping up", "Bank transfer, then wait until someone books it", "iDEAL in seconds, orders release right away"],
+    ["Orders that are stuck", "You find out when a customer complains", "Listed with the reason: low balance or no price yet"],
+    ["Tracking", "Pasted in by hand, sometimes days later", "Pushed to Shopify, your customer gets the email"],
+    ["Your margin", "Do the maths yourself", "Shop price, our price and what you keep, side by side"],
+    ["Getting out", "Unclear", `Stop any time, balance back within ${G.REFUND_DAYS} days`],
+  ];
+  publicShell(`
+    <section class="hero"><div class="eyebrow">China → your customer's door</div>
+      <h1>You sell it.<br>We ship it.</h1>
+      <p>Sourcing, quality checks, packing and shipping from China for European webshops. Connect Shopify in one click and see every price, order and euro in one portal.</p>
+      <div class="row" style="justify-content:center"><a class="btn lg red" href="#/signup">Create a free account</a>${CONFIG.BOOKING_URL ? `<a class="btn lg ghost" href="${esc(safeUrl(CONFIG.BOOKING_URL))}" target="_blank" rel="noopener">Book a call</a>` : `<a class="btn lg ghost" href="#/?s=how">How it works</a>`}</div>
+    </section>${inkHills}
+    <section class="sec" id="how"><div class="eyebrow">How it works</div><h2 class="big">Live the same day.</h2>
+      <div class="steps">
+        <div class="card step"><div class="n">01</div><h3>Connect Shopify</h3><p>Sign up and connect your store with one click. All your products and variants come in automatically.</p></div>
+        <div class="card step"><div class="n">02</div><h3>We price everything</h3><p>We find the supplier and give every product one all-in price. You see it in your portal, next to what you keep.</p></div>
+        <div class="card step"><div class="n">03</div><h3>Top up your balance</h3><p>iDEAL, Bancontact or card. Your balance updates in seconds.</p></div>
+        <div class="card step"><div class="n">04</div><h3>Orders ship themselves</h3><p>New orders are paid from your balance, packed and shipped. Tracking goes straight back to Shopify.</p></div>
+      </div></section>
+    ${guarantees.length ? `<section class="sec tight" id="guarantees"><div class="eyebrow">Guarantees</div><h2 class="big">What we promise. In writing.</h2>
+      <p class="muted" style="max-width:620px">These are in our terms, not just on this page.</p>
+      <div class="grid g3" style="margin-top:24px">${guarantees.map(([v, t, d]) => `<div class="card"><div class="big" style="font-size:34px">${v}</div><h3 style="margin:6px 0">${t}</h3><p class="muted small" style="margin:0">${d}</p></div>`).join("")}</div></section>` : ""}
+    <section class="sec tight" id="difference"><div class="eyebrow">The difference</div><h2 class="big">Most agents run on WhatsApp and Excel.</h2>
+      <div class="scroll"><table class="cmp"><tr><th></th><th>The usual agent</th><th>Shipdao</th></tr>
+        ${rows.map(([k, a, b]) => `<tr><td><b>${k}</b></td><td class="no">✕ ${a}</td><td class="us">✓ ${b}</td></tr>`).join("")}</table></div></section>
+    <section class="sec tight faq" id="faq"><div class="eyebrow">FAQ</div><h2 class="big">What store owners ask first.</h2>
+      <div style="margin-top:18px;max-width:820px">${faq.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}</div></section>
+    <section class="sec tight"><div class="band"><h2>Ready to stop chasing your supplier?</h2><p>Create an account, connect your store and see your prices.</p>
+      <a class="btn lg red" href="#/signup" style="margin-top:10px">Get started</a></div></section>`, { scroll });
+}
+function partnersPage() {
+  publicShell(`<section class="hero"><div class="eyebrow">For coaches, communities and creators</div><h1>Your students sell.<br>We ship. You earn.</h1>
+      <p>Send the stores you mentor to a fulfilment partner you can vouch for, and earn on every order they ship, for as long as they ship.</p></section>
+    <section class="sec tight"><div class="grid g3">
+      <div class="card"><div class="eyebrow">What your students get</div><h3>The same deal as everyone</h3><p class="muted small">One-click Shopify connection, all-in prices per product, iDEAL top-ups and tracking straight to their store. No lock-in.</p></div>
+      <div class="card"><div class="eyebrow">What you get</div><h3>${has(CONFIG.PARTNER_COMMISSION) ? `${esc(CONFIG.PARTNER_COMMISSION)} per order` : "A cut of every order"}</h3><p class="muted small">${has(CONFIG.PARTNER_COMMISSION) ? "On every order your students ship, every month, not a one-off bounty." : "A recurring commission per order, not a one-off bounty. We go through the numbers with you."}</p></div>
+      <div class="card"><div class="eyebrow">You stay in the loop</div><h3>Know how they are doing</h3><p class="muted small">Regular updates on the stores you sent, so you can help them where it counts.</p></div></div>
+      ${has(CONFIG.PARTNER_COMMISSION) && /\d/.test(CONFIG.PARTNER_COMMISSION) ? `<div class="card" style="margin-top:16px" id="calc"><h3>Do the maths</h3>
+        <div class="grid g3" style="margin-top:12px"><div class="field"><label>Students shipping with us</label><input type="number" min="0" value="10" data-c="s"></div>
+        <div class="field"><label>Orders per day, per student</label><input type="number" min="0" value="10" data-c="o"></div>
+        <div><label>Your income per month</label><div class="big" style="font-size:32px" id="calcOut"></div></div></div></div>` : ""}
+      <div class="band" style="margin-top:24px"><h2>Talk numbers</h2><p>Tell us who your students are and what they sell.</p><div class="row" style="justify-content:center;margin-top:10px">${contactLinks().replace(/<a /g, '<a class="btn red" style="margin:4px" ') || `<a class="btn red" href="#/signup">Get in touch</a>`}</div></div></section>`);
+  const out = document.getElementById("calcOut");
+  if (out) { const per = Number(String(CONFIG.PARTNER_COMMISSION).replace(",", ".").replace(/[^\d.]/g, ""));
+    const calc = () => { const v = (k) => Number(document.querySelector(`[data-c=${k}]`).value || 0); out.textContent = eur(v("s") * v("o") * 30 * per); };
+    document.getElementById("calc").oninput = calc; calc(); }
+}
+const DOCS = () => [
+  ["start", "How Shipdao works", `<p>Shipdao is the fulfilment side of your business. Your store stays in Shopify. Orders that come in there arrive with us automatically; we buy the product, check it, pack it and ship it to your customer, and the tracking goes back to Shopify.</p>
+    <h3>The loop</h3><ol><li>Your customer orders in your Shopify store.</li><li>The order appears in your portal within seconds.</li><li>It is paid from your balance at the agreed price.</li><li>We pack and ship it.</li><li>Tracking lands in Shopify and your customer gets the shipping email.</li></ol>
+    <h3>What you do</h3><ul><li>Keep your balance topped up.</li><li>Check new products are priced before you advertise them.</li><li>Look at orders that are waiting, now and then.</li></ul>
+    <h3>What the portal is not</h3><p>It is not your store. Your product pages, the prices your customers pay, refunds to customers and marketing all stay in Shopify.</p>`],
+  ["account", "Creating your account", `<p>Go to <a href="#/signup">Get started</a>, fill in your store name, your name, email and a password (8+ characters), and accept the terms. Confirm the email we send you and you are in.</p>
+    <p>Forgot your password? Use <a href="#/reset">Forgot password</a> on the login screen. Store name, store URL and WhatsApp number can be changed under <b>Account</b>.</p>`],
+  ["connect", "Connecting Shopify", `<ol><li>In the portal open <b>Connect store</b>.</li><li>Type your <b>.myshopify.com</b> address (Shopify → Settings → Domains shows it).</li><li>Click <b>Connect Shopify</b> and approve the permissions in Shopify.</li><li>You come back to the portal and your products are already imported.</li></ol>
+    <p>No app to create, no keys to send. New and changed products in Shopify come in automatically. You can import again any time with <b>Re-import from Shopify</b>.</p>
+    <h3>What we can see</h3><p>Your orders (to ship them), your products (to price them) and the fulfilment of orders we handle (to add tracking). Nothing else. Uninstall the app in Shopify and the connection stops at once.</p>`],
+  ["products", "Products and prices", `<p>Every product and variant from your store is listed under <b>Products</b>, with your shop price, our all-in price and what you keep.</p>
+    <dl class="kv"><dt>Waiting for price</dt><dd>Imported, not priced yet. Orders for it wait.</dd><dt>Being sourced</dt><dd>We are getting prices from suppliers.</dd><dt>Priced</dt><dd>Agreed price. Orders for it are charged and shipped automatically.</dd></dl>
+    <p>Each variant has its own price: a red and a blue version can differ. ${has(G.QUOTE_HOURS) ? `New products are priced within ${G.QUOTE_HOURS} hours.` : ""}</p>
+    <h3>Before you advertise a new product</h3><p>Add it in Shopify, check it shows up in <b>Products</b>, and wait until it says <b>Priced</b>. Then switch on your ads.</p>
+    <h3>Quotes</h3><p>Not on Shopify yet, or testing a product first? Use <b>Quotes</b> to send product links and get a price back, then accept it.</p>`],
+  ["balance", "Balance and top-ups", `<p>You work with a prepaid balance. Your current balance is on the overview; every top-up and charge is under <b>Orders → Balance history</b>.</p>
+    <h3>Topping up</h3><ul><li><b>Online</b>: pick an amount (€10 to €5,000) and pay with iDEAL, Bancontact or card. Your balance updates within seconds.</li><li><b>Bank transfer</b>: when shown on your overview. Slower: it is added once we receive it.</li></ul>
+    <h3>How much?</h3><p>Look at what you spend in a normal week and stay a week ahead. Orders that hit an empty balance wait until you top up, and that costs you delivery time.</p>
+    <h3>Getting it back</h3><p>Unused balance is refunded on request within ${G.REFUND_DAYS} days.</p>`],
+  ["orders", "Orders and what each status means", `<dl class="kv"><dt>new</dt><dd>Just came in, being charged.</dd><dt>paid</dt><dd>Charged from your balance, waiting to be packed.</dd><dt>sent to agent</dt><dd>With our warehouse, being packed.</dd><dt>shipped</dt><dd>On its way. Tracking is in the order and in Shopify.</dd>
+      <dt>on hold</dt><dd>Your balance was too low. Top up and it goes out automatically.</dd><dt>issue</dt><dd>A product in it has no agreed price yet. The note says which one.</dd><dt>cancelled</dt><dd>Cancelled; the price went back to your balance.</dd></dl>
+    <h3>“My order isn't here”</h3><p>Usually it is not paid in Shopify yet, it was placed before you connected your store, or it has no shippable items. Still missing? Send us the Shopify order number.</p>`],
+  ["tracking", "Tracking and “where is my order?”", `<p>When an order ships, the tracking number appears in your portal and in Shopify, and Shopify emails your customer. A customer asking where their order is? Search the order number under <b>Orders</b> and send them the tracking link.</p>
+    <p>${has(G.DELIVERY_EU) ? `Typical delivery in the EU: ${esc(G.DELIVERY_EU)}. ` : ""}No delivery scan after ${G.LOST_PARCEL_DAYS} days? Tell us, and we reship or credit the order. Damaged or wrong item: send photos within 14 days.</p>`],
+  ["routine", "Your routine", `<h3>Every day, two minutes</h3><ul><li>Overview: anything waiting?</li><li>Balance enough for the next few days?</li></ul><h3>Every week</h3><ul><li>Products: anything new waiting for a price?</li><li>Balance history: does the spend match your sales?</li></ul>`],
+  ["help", "Help", `<p>Questions, a stuck order or a product you want priced quickly: ${contactLinks() ? contactLinks().replace(/<a /g, '<a style="margin-right:10px" ') : "message us from your portal"}.</p><p>Legal: <a href="#/terms">terms</a>, <a href="#/privacy">privacy</a>, <a href="#/dpa">data processing</a>.</p>`],
+];
+function docsPage() {
+  const d = DOCS();
+  publicShell(`<div class="docs"><nav><div class="eyebrow">Documentation</div>${d.map(([id, t], i) => `<a href="#/docs" data-doc="${id}"><span class="num">${i + 1}</span>${t}</a>`).join("")}</nav>
+    <article><h1>Everything about Shipdao</h1><p class="muted">How it works, connecting your store, and every page of your portal explained.</p>
+      ${d.map(([id, t, body], i) => `<section id="doc-${id}"><h2><span class="num">${i + 1}</span>${t}</h2>${body}</section>`).join("")}</article></div>`);
+  document.querySelectorAll("[data-doc]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); document.getElementById("doc-" + a.dataset.doc).scrollIntoView({ behavior: "smooth" }); }));
+}
+function renderLegal(path) {
+  publicShell(`<div class="legal">${LEGAL[path]()}</div>`);
+}
+const PUBLIC = { "/docs": docsPage, "/partners": partnersPage, "/terms": () => renderLegal("/terms"), "/privacy": () => renderLegal("/privacy"), "/dpa": () => renderLegal("/dpa") };
 
 // ===== AUTH =====
 function renderAuth(mode = "login") {
   $root.innerHTML = `<div class="auth"><div class="card">
-    <div class="brand"><div class="seal">道</div>shipdao</div>
+    ${sealBrand}
     <h1 style="margin-top:22px">${mode === "signup" ? "Create your account" : mode === "reset" ? "Reset password" : "Welcome back"}</h1>
     <p class="muted small" style="margin:6px 0 0">${mode === "signup" ? "Get quotes, top up your balance and follow every order." : "Your fulfilment portal."}</p>
     ${mode !== "reset" ? `<div class="tabs"><button class="${mode === "login" ? "" : "ghost"}" data-m="login">Log in</button><button class="${mode === "signup" ? "" : "ghost"}" data-m="signup">Sign up</button></div>` : `<div style="height:18px"></div>`}
@@ -247,7 +419,7 @@ function renderAuth(mode = "login") {
     </form>
     <p class="small" style="text-align:center;margin:16px 0 0">${mode === "reset" ? `<a href="#" data-m="login">Back to log in</a>` : `<a href="#" data-m="reset">Forgot password?</a>`}</p>
   ${footer()}</div></div>`;
-  $root.querySelectorAll("[data-m]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); renderAuth(b.dataset.m); }));
+  $root.querySelectorAll("[data-m]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); location.hash = "/" + b.dataset.m; }));
   $root.querySelector("#authForm").onsubmit = async (e) => {
     e.preventDefault(); const f = Object.fromEntries(new FormData(e.target).entries());
     const btn = e.target.querySelector("button"); btn.disabled = true;
@@ -256,7 +428,7 @@ function renderAuth(mode = "login") {
         const { data, error } = await sb.auth.signUp({ email: f.email, password: f.password,
           options: { data: { company: f.company, full_name: f.full_name, store_url: f.store_url, terms_accepted_at: new Date().toISOString(), terms_version: 1 }, emailRedirectTo: location.origin + location.pathname } });
         if (error) throw error;
-        if (!data.session) { toast("Check your email to confirm your account."); renderAuth("login"); }
+        if (!data.session) { toast("Check your email to confirm your account."); location.hash = "/login"; }
       } else if (mode === "reset") {
         const { error } = await sb.auth.resetPasswordForEmail(f.email, { redirectTo: location.origin + location.pathname });
         if (error) throw error; toast("If that email has an account, a reset link is on its way.");
@@ -279,7 +451,7 @@ function shell(active, content, counts = {}) {
         ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/clients", "Clients")}` : `
         ${link("/", "Overview")}${link("/quotes", "Quotes")}${link("/orders", "Orders")}${link("/products", "Products")}${link("/connect", "Connect store")}${link("/account", "Account")}`}
       </nav>
-      <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">Log out</a><div style="margin-top:8px;font-size:11px"><a href="#/terms" style="color:var(--muted)">Terms</a> · <a href="#/privacy" style="color:var(--muted)">Privacy</a></div></div>
+      <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">Log out</a><div style="margin-top:8px;font-size:11px"><a href="#/docs" style="color:var(--muted)">Help</a> · <a href="#/terms" style="color:var(--muted)">Terms</a> · <a href="#/privacy" style="color:var(--muted)">Privacy</a></div></div>
     </aside><main class="main" id="main">${content}</main></div>`;
   document.getElementById("logout").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); };
 }
@@ -494,7 +666,9 @@ async function adminOverview() {
   ].filter((x) => x[0] > 0);
   const lowBal = cs.filter((c) => c.on_hold_value > 0 || (c.status === "active" && c.balance < 50));
   const miss = missingCompany();
+  const missG = Object.entries(CONFIG.GUARANTEES).filter(([, v]) => isPlaceholder(v)).map(([k]) => k.toLowerCase().replace("_", " "));
   shell("/admin", `${miss.length ? `<div class="notice" style="margin-bottom:16px"><b>Not ready to go live.</b> Fill in your business details in CONFIG.COMPANY at the top of index.html: ${miss.map((k) => k.toLowerCase().replace("_", " ")).join(", ")}. Without them your terms say "[KvK number]" and Mollie will not approve you. 🙃</div>` : ""}
+    ${missG.length ? `<div class="notice" style="margin-bottom:16px;background:var(--blue-soft);color:var(--blue)">Hidden on your public site until you fill them in (CONFIG.GUARANTEES): ${missG.join(", ")}. Only promise what you can deliver.</div>` : ""}
     <div class="head"><div><h1>Overview</h1><p class="muted" style="margin:4px 0 0">Everything across all clients, ${date(new Date())}.</p></div>
       <button class="ghost" id="refresh">Refresh</button></div>
     <div class="grid g4">
@@ -833,9 +1007,17 @@ const routes = {
   admin: { "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/clients": adminClients },
 };
 async function route() {
-  const h = location.hash.replace(/^#/, "");
-  if (LEGAL[h]) return renderLegal(h);
-  if (!ME) return renderAuth();
+  const [h, q] = location.hash.replace(/^#/, "").split("?");
+  const scroll = new URLSearchParams(q || "").get("s");
+  if (PUBLIC[h]) return PUBLIC[h]();
+  if (!ME) {
+    if (["/login", "/signup", "/reset"].includes(h)) return renderAuth(h.slice(1));
+    return landingPage(scroll);
+  }
+  if (["/login", "/signup", "/reset"].includes(h) || ((h === "/" || h === "") && scroll)) {
+    if (scroll) return landingPage(scroll);
+    location.hash = ""; return;
+  }
   const path = location.hash.replace(/^#/, "") || (ME.role === "admin" ? "/admin" : "/");
   const table = routes[ME.role === "admin" ? "admin" : "client"];
   const fn = table[path] || table[ME.role === "admin" ? "/admin" : "/"];
@@ -848,8 +1030,7 @@ async function route() {
 window.addEventListener("hashchange", route);
 
 async function boot(session) {
-  if (LEGAL[location.hash.replace(/^#/, "")]) renderLegal(location.hash.replace(/^#/, ""));
-  if (!session) { ME = null; CURRENT_UID = null; return LEGAL[location.hash.replace(/^#/, "")] ? null : renderAuth(); }
+  if (!session) { ME = null; CURRENT_UID = null; return route(); }
   if (ME && CURRENT_UID === session.user.id) return; // same user, keep the current page
   CURRENT_UID = session.user.id;
   ME = await rpc("whoami").catch(() => null);
