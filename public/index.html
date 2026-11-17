@@ -158,7 +158,7 @@ const CONFIG = {
     LEGAL_NAME: "Ecom Thijmen",
     KVK: "97815845",
     VAT: "NL005289760B27",
-    ADDRESS: "Brugstraat 4, Heerde, Netherlands",
+    ADDRESS: "Brugstraat 4, 8181 VH Heerde, Netherlands",
     EMAIL: "hello@shipdao.nl",
     COURT: "Gelderland",
   },
@@ -250,7 +250,7 @@ const LEGAL = {
       <li>A quote is valid for 30 days. We may change prices for new orders with 7 days' notice, for example when supplier or shipping costs change. Orders already paid keep their price.</li></ol>
     <h2>4. Balance and payment</h2><ol><li>You work with a prepaid balance. Every order is charged from your balance at the agreed price as soon as it comes in.</li>
       <li>If your balance is too low, the order waits until you top up. We are not responsible for delays caused by a low balance or by a product without an agreed price.</li>
-      <li>You can top up online (iDEAL, Bancontact, card via our payment provider Mollie) or by bank transfer.</li>
+      <li>You can top up online (iDEAL, Bancontact, card via our payment provider Mollie).</li>
       <li>Unused balance is refunded on request within 14 days, minus any payment costs that cannot be recovered. A chargeback on a top-up is deducted from your balance.</li></ol>
     <h2>5. Delivery</h2><ol><li>Delivery times are estimates, not deadlines.</li>
       <li>If a parcel is lost (no delivery scan 30 days after shipping), we reship it or credit the order price to your balance, at our choice. Damaged or wrong items must be reported within 14 days of delivery with photos.</li>
@@ -317,7 +317,7 @@ function landingPage(scroll) {
   ].filter(Boolean);
   const faq = [
     ["How does pricing work?", "One all-in price per product (and per variant), covering the product, checks, packing and shipping. You see it in your portal before a single order ships. No subscription, no setup fee."],
-    ["How do I pay?", "You keep a balance with us. Top up in seconds with iDEAL, Bancontact or card, or by bank transfer. Every order is charged from that balance at the agreed price."],
+    ["How do I pay?", "You keep a balance with us. Top up in seconds with iDEAL, Bancontact or card. Every order is charged from that balance at the agreed price."],
     ["What if my balance runs out?", "Orders wait in your portal with the reason next to them. The moment you top up, they are charged and go out automatically. Nothing gets lost."],
     ["Do I have to set up an app or send API keys?", "No. You type your .myshopify.com address and approve the connection in Shopify. One click. Your products are imported right away."],
     ["Which platforms do you support?", "Shopify. Running something else? Get in touch and we will tell you honestly whether we are a fit yet."],
@@ -393,9 +393,9 @@ const DOCS = () => [
     <h3>Before you advertise a new product</h3><p>Add it in Shopify, check it shows up in <b>Products</b>, and wait until it says <b>Priced</b>. Then switch on your ads.</p>
     <h3>Quotes</h3><p>Not on Shopify yet, or testing a product first? Use <b>Quotes</b> to send product links and get a price back, then accept it.</p>`],
   ["balance", "Balance and top-ups", `<p>You work with a prepaid balance. Your current balance is on the overview; every top-up and charge is under <b>Orders → Balance history</b>.</p>
-    <h3>Topping up</h3><ul><li><b>Online</b>: pick an amount (€10 to €5,000) and pay with iDEAL, Bancontact or card. Your balance updates within seconds.</li><li><b>Bank transfer</b>: when shown on your overview. Slower: it is added once we receive it.</li></ul>
+    <h3>Topping up</h3><ul><li><b>Online</b>: pick an amount (€10 to €5,000) and pay with iDEAL, Bancontact or card. Your balance updates within seconds.</li>${isPlaceholder(CONFIG.TOPUP_INSTRUCTIONS) ? "" : "<li><b>Bank transfer</b>: when shown on your overview. Slower: it is added once we receive it.</li>"}</ul>
     <h3>How much?</h3><p>Look at what you spend in a normal week and stay a week ahead. Orders that hit an empty balance wait until you top up, and that costs you delivery time.</p>
-    <h3>Paid by bank transfer?</h3><p>Under <b>Balance</b>, use <b>I paid this</b> with the amount and the name on your account. We add it once it arrives; you see its status there.</p>
+    ${isPlaceholder(CONFIG.TOPUP_INSTRUCTIONS) ? "" : "<h3>Paid by bank transfer?</h3><p>Under <b>Balance</b>, use <b>I paid this</b> with the amount and the name on your account. We add it once it arrives; you see its status there.</p>"}
     <h3>Your statement</h3><p><b>Balance</b> lists every top-up, charge and refund with your balance after each one. Pick a month and <b>Export (CSV)</b>: that file is what your bookkeeper wants.</p>
     <h3>Getting it back</h3><p>Unused balance is refunded on request within ${G.REFUND_DAYS} days.</p>`],
   ["messages", "Messages", `<p>Every order and every product has its own chat with us. When we need your OK on a size, a colour or a replacement, we ask it there, with the product next to it. A red dot in the menu means something is waiting for you.</p>`],

@@ -5,7 +5,7 @@ import html, pathlib
 OUT = pathlib.Path(__file__).resolve().parent.parent / "site"
 E = html.escape
 EMAIL = "hello@shipdao.nl"
-COMPANY = "Shipdao is a trade name of Ecom Thijmen · Brugstraat 4, Heerde, Netherlands · KvK 97815845 · VAT NL005289760B27"
+COMPANY = "Shipdao is a trade name of Ecom Thijmen · Brugstraat 4, 8181 VH Heerde, Netherlands · KvK 97815845 · VAT NL005289760B27"
 
 def head(title, desc, path):
     return f"""<!doctype html>
@@ -161,7 +161,7 @@ CH = [
   ("Questions about a product", [("p", "Every product has a chat. When we need your OK on a size, a colour or a replacement before we buy, we ask it there, with the product next to it.")], None)]),
  ("balance", "Balance and payments", "How you pay, how much to keep in, and the file your bookkeeper wants.", [
   ("How the balance works", [("p", "You keep a prepaid balance with us. Every order is charged from it at the agreed price the moment it comes in. If the balance runs out, orders wait until you top up, then go out automatically.")], None),
-  ("Topping up", [("ul", ["Online: choose an amount and pay with iDEAL, Bancontact or card. Your balance updates within seconds.", "Bank transfer: transfer the amount, then press “I paid this” under Balance so we can match it."])], ("d4-balance.png", "Balance: top up online, report a transfer, export your statement.")),
+  ("Topping up", [("p", "Choose an amount and pay with iDEAL, Bancontact or card. Your balance updates within seconds.")], ("d4-balance.png", "Balance: top up online and export your statement.")),
   ("How much, how often", [("p", "Look at what you spend in a normal week and stay a week ahead. It costs nothing to sit in credit, and an empty balance is the most common reason orders sit still.")], None),
   ("Your statement", [("p", "Balance lists every top-up, charge and refund with your balance after each one. Pick a month and export it.")], None),
   ("Getting it back", [("p", "Stop whenever you want. Unused balance is refunded on request, as set out in our terms.")], None)]),
