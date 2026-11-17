@@ -3,17 +3,34 @@
 De database en alle edge functions draaien al op Supabase-project `yjkbjljnnikfqvzvzulg`.
 Wat nog moet gebeuren kan alleen jij doen (accounts en geheime sleutels).
 
-## 1. Portal online zetten
-`index.html` is de hele portal. Zet hem online (Netlify Drop, Vercel, GitHub Pages, Cloudflare Pages).
-Noteer de URL, bijvoorbeeld `https://portal.shipdao.nl/`.
+## 1. Online zetten: Framer (site) + Vercel (portal)
+Opzet:
+- `shipdao.nl` → **Framer**: je publieke site (home, how it works, FAQ, partners)
+- `app.shipdao.nl` → **Vercel**: de portal (`index.html`), login en dashboard
+- **Supabase** blijft de backend: database, betalingen, Shopify
+
+**Vercel**
+1. vercel.com → inloggen met GitHub → *Add New → Project* → kies `shipdao`.
+2. Framework preset: **Other**. Build command: leeg. Output directory: leeg (`.`).
+3. Deploy. `vercel.json` en `.vercelignore` zitten al in de repo (beveiligingsheaders; database-bestanden en notities gaan niet online).
+4. Settings → Domains → voeg `app.shipdao.nl` toe en zet het DNS-record dat Vercel noemt bij je domeinregistrar.
+5. Elke push naar de production branch zet automatisch een nieuwe versie online.
+
+**Framer**
+1. Publiceer je Framer-site op `shipdao.nl`.
+2. Knoppen "Log in" → `https://app.shipdao.nl/#/login`, "Get started" → `https://app.shipdao.nl/#/signup`.
+3. In `index.html`: zet `CONFIG.SITE_URL = "https://shipdao.nl"`. De portal toont dan geen eigen homepage meer maar meteen de login, en het logo linkt naar Framer.
+4. Link vanuit Framer naar de juridische pagina's in de portal: `https://app.shipdao.nl/#/terms`, `#/privacy`, `#/dpa` (die moeten bij de portal blijven vanwege de aanmeldcheckbox).
+
+Noteer de portal-URL (`https://app.shipdao.nl`), die heb je hieronder nodig.
 
 In Supabase → Authentication → URL Configuration:
-- **Site URL** = die URL
+- **Site URL** = je portal-URL (Vercel, bv. `https://app.shipdao.nl`)
 - **Redirect URLs** = dezelfde URL toevoegen
 
 ## 2. Shopify-app maken
 Shopify Partners (partners.shopify.com) → Apps → Create app → handmatig.
-- **App URL**: je portal-URL
+- **App URL**: je portal-URL (Vercel)
 - **Allowed redirection URL**: `https://yjkbjljnnikfqvzvzulg.supabase.co/functions/v1/shopify-callback`
 - **Compliance webhooks** (alle drie): `https://yjkbjljnnikfqvzvzulg.supabase.co/functions/v1/shopify-webhook`
 - **API access → Protected customer data**: aanvragen voor naam + adres

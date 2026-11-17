@@ -166,6 +166,9 @@ const CONFIG = {
     LOST_PARCEL_DAYS: 30,       // same as the terms
     REFUND_DAYS: 14,            // unused balance back within X days (same as the terms)
   },
+  // Your public site (Framer). When set, the portal skips its own homepage: logged-out visitors get the login,
+  // and the logo / "back to site" links go here. Leave empty to use the built-in homepage.
+  SITE_URL: "", // e.g. "https://shipdao.nl"
   BOOKING_URL: "",             // e.g. a Calendly link for "Book a call"
   PARTNER_COMMISSION: "",      // e.g. "€0.50" per order for referral partners; empty = "we tell you on a call"
   ONLINE_TOPUP: true, // iDEAL / Bancontact / card via Mollie (needs MOLLIE_API_KEY secret in Supabase)
@@ -278,7 +281,7 @@ const contactLinks = () => [
   CONFIG.BOOKING_URL ? `<a href="${esc(safeUrl(CONFIG.BOOKING_URL))}" target="_blank" rel="noopener">Book a call</a>` : "",
   CONFIG.WHATSAPP ? `<a href="https://wa.me/${esc(CONFIG.WHATSAPP)}" target="_blank" rel="noopener">WhatsApp</a>` : "",
   has(C.EMAIL) ? `<a href="mailto:${esc(C.EMAIL)}">${esc(C.EMAIL)}</a>` : ""].filter(Boolean).join("");
-const sealBrand = `<a href="#/" class="brand" style="text-decoration:none;color:var(--ink)"><div class="seal">道</div>shipdao</a>`;
+const sealBrand = `<a href="${CONFIG.SITE_URL ? esc(CONFIG.SITE_URL) : "#/"}" class="brand" style="text-decoration:none;color:var(--ink)"><div class="seal">道</div>shipdao</a>`;
 const inkHills = `<svg class="ink" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5">
   <path d="M0 110 C120 70 180 40 260 60 S420 105 520 80 S700 20 800 45 S980 100 1080 70 S1170 50 1200 60"/>
   <path d="M0 116 C160 95 240 80 340 92 S560 110 660 98 S860 72 960 88 S1120 108 1200 100" opacity=".6"/>
@@ -286,7 +289,7 @@ const inkHills = `<svg class="ink" viewBox="0 0 1200 120" preserveAspectRatio="n
 function publicShell(body, { scroll } = {}) {
   const logged = !!ME;
   $root.innerHTML = `<div class="pub"><header class="pnav"><div class="in">${sealBrand}
-      <nav class="links"><a href="#/?s=how">How it works</a><a href="#/?s=guarantees">Guarantees</a><a href="#/?s=difference">The difference</a><a href="#/?s=faq">FAQ</a><a href="#/docs">Docs</a><a href="#/partners">Partners</a></nav>
+      <nav class="links">${CONFIG.SITE_URL ? `<a href="${esc(CONFIG.SITE_URL)}">← Back to site</a>` : `<a href="#/?s=how">How it works</a>`}${CONFIG.SITE_URL ? "" : `<a href="#/?s=guarantees">Guarantees</a><a href="#/?s=difference">The difference</a><a href="#/?s=faq">FAQ</a>`}<a href="#/docs">Docs</a><a href="#/partners">Partners</a></nav>
       <div class="cta">${logged ? `<a class="btn sm" href="#${ME.role === "admin" ? "/admin" : "/"}" id="toPortal">Open portal</a>` : `<a class="btn sm ghost" href="#/login">Log in</a><a class="btn sm" href="#/signup">Get started</a>`}</div></div></header>
     ${body}
     <footer class="pfoot"><div class="in">
@@ -1224,10 +1227,11 @@ async function route() {
   if (PUBLIC[h]) return PUBLIC[h]();
   if (!ME) {
     if (["/login", "/signup", "/reset"].includes(h)) return renderAuth(h.slice(1));
+    if (CONFIG.SITE_URL) return renderAuth("login");
     return landingPage(scroll);
   }
   if (["/login", "/signup", "/reset"].includes(h) || ((h === "/" || h === "") && scroll)) {
-    if (scroll) return landingPage(scroll);
+    if (scroll) return CONFIG.SITE_URL ? (location.href = CONFIG.SITE_URL) : landingPage(scroll);
     location.hash = ""; return;
   }
   const path = location.hash.replace(/^#/, "") || (ME.role === "admin" ? "/admin" : "/");
