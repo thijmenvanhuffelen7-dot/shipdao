@@ -1,2 +1,4 @@
 wrangler.jsonc
 .assetsignore
+vercel.json
+wrangler.jsonc
