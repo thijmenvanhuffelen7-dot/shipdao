@@ -232,6 +232,25 @@ def home():
   <div class="acc-list" data-r>{faq}</div>
 </div></section>
 
+<section class="cs calc-s" id="calculator" style="padding-top:0"><div class="hw">
+  <div class="split" data-r><div><p class="mono acc">Margin check · 利润</p><h2>What does your product<br><em class="it">really</em> leave you?</h2></div><p class="note">Fill in your numbers. Nothing is sent until you ask for your price check.</p></div>
+  <div class="calc" data-r>
+    <form class="cin" id="calc" onsubmit="return false">
+      <label>Your selling price (€)<input name="sell" type="number" min="0" step="0.01" value="34.95" inputmode="decimal"></label>
+      <label>What you pay now per order, product + shipping (€)<input name="cost" type="number" min="0" step="0.01" value="17.50" inputmode="decimal"></label>
+      <label>Orders per day<input name="opd" type="number" min="0" step="1" value="20" inputmode="numeric"></label>
+      <label>Orders refunded (late, broken, lost) (%)<input name="ref" type="number" min="0" max="100" step="0.5" value="6" inputmode="decimal"></label>
+    </form>
+    <div class="cout">
+      <div><p class="mono">You keep per order</p><p class="pn" id="c-per">–</p></div>
+      <div><p class="mono">Per month</p><p class="pn" id="c-month">–</p></div>
+      <div><p class="mono">Lost to refunds per month</p><p class="pn acc" id="c-lost">–</p></div>
+      <p class="cnote">Before ad spend and payment fees. Slow shipping and no quality check usually show up as refunds and chargebacks. That last number is what a better supply chain can win back.</p>
+      <a class="btn arrow" href="#contact" id="c-go">See your price with Shipdao<b>→</b></a>
+    </div>
+  </div>
+</div></section>
+
 <section class="cs end" id="contact"><div class="hw">
   <p class="mono acc c" data-r>Free · quote within 24 hours</p>
   <h2 class="c huge" data-r>Let's ship it<span class="acc">.</span></h2>

@@ -102,3 +102,10 @@ Het "Free price check"-formulier stuurt naar je Gmail én naar **Leads** in de p
 ## Monitoring
 **Insights → System health** laat per winkel zien wanneer de laatste webhook binnenkwam en welke fouten er waren.
 "invalid HMAC signature" = `SHOPIFY_API_SECRET` in Supabase klopt niet met je Shopify-app.
+
+## Facturen, claims, partners (november 2026)
+- **Facturen**: bij elke echte opwaardering (Mollie, overboeking of handmatig door jou) maakt de database automatisch een factuur aan: `SD-2026-0001`, `SD-2026-0002`, enzovoort, zonder gaten. Testbetalingen krijgen geen factuur. Klanten vullen hun bedrijfsgegevens in onder Account. Btw-regel: NL of geen btw-nummer = 21% inbegrepen; EU-bedrijf buiten NL met btw-nummer = verlegd (0%); buiten de EU = 0%. **Laat dit één keer checken door je boekhouder.** Overzicht en CSV-export: Admin → Invoices.
+- **Claims**: een klant meldt een verloren pakket (vanaf 30 dagen na verzending) of een kapot/verkeerd product (met foto). Jij kiest in Admin → Claims: opnieuw versturen (de order gaat terug naar de agent, gratis voor de klant), saldo terug, of afwijzen. De klant krijgt automatisch een bericht in de orderchat.
+- **Partners**: Admin → Partners → partner toevoegen (naam, e-mail, code, commissie per verzonden order). Hun link is `https://shipdao.nl/?ref=code`. Winkels die zich via die link aanmelden, worden automatisch aan de partner gekoppeld. Je kunt dit ook later handmatig doen via Clients → Edit. De partner logt in op de portal met hetzelfde e-mailadres en ziet daar zijn winkels en verdiensten. Uitbetalen doe je zelf; daarna klik je op "Record payout".
+- **Prijzen in bulk**: Admin → Products → Export (CSV), vul de €-kolommen in en kies Import prices (CSV). Lege cellen worden niet aangepast.
+- **Agent**: de agent-portal staat standaard in het Chinees. Onderaan de zijbalk kan de agent wisselen naar Engels.

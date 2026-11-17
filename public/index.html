@@ -422,7 +422,10 @@ function renderLegal(path) {
 const PUBLIC = { "/docs": docsPage, "/partners": partnersPage, "/terms": () => renderLegal("/terms"), "/privacy": () => renderLegal("/privacy"), "/dpa": () => renderLegal("/dpa") };
 
 // ===== AUTH =====
+const refCode = () => { const r = new URLSearchParams(location.hash.split("?")[1] || location.search).get("ref");
+  try { if (r) localStorage.setItem("sd_ref", r.toLowerCase()); return r ? r.toLowerCase() : localStorage.getItem("sd_ref") || ""; } catch { return r || ""; } };
 function renderAuth(mode = "login") {
+  const ref = refCode();
   $root.innerHTML = `<div class="auth"><div class="card">
     ${sealBrand}
     <h1 style="margin-top:22px">${mode === "signup" ? "Create your account" : mode === "join" ? "Agent account <span class='zh'>代理账户</span>" : mode === "reset" ? "Reset password" : "Welcome back"}</h1>
@@ -452,7 +455,7 @@ function renderAuth(mode = "login") {
         if (!data.session) { toast("Check your email to confirm your account. 请查收邮件确认账户。"); location.hash = "/login"; }
       } else if (mode === "signup") {
         const { data, error } = await sb.auth.signUp({ email: f.email, password: f.password,
-          options: { data: { company: f.company, full_name: f.full_name, store_url: f.store_url, terms_accepted_at: new Date().toISOString(), terms_version: 1 }, emailRedirectTo: location.origin + location.pathname } });
+          options: { data: { company: f.company, full_name: f.full_name, store_url: f.store_url, terms_accepted_at: new Date().toISOString(), terms_version: 1, ref: ref || undefined }, emailRedirectTo: location.origin + location.pathname } });
         if (error) throw error;
         if (!data.session) { toast("Check your email to confirm your account."); location.hash = "/login"; }
       } else if (mode === "reset") {
@@ -473,15 +476,18 @@ function shell(active, content, counts = {}) {
   $root.innerHTML = `<div class="app"><aside class="side">
       <div class="brand"><div class="seal">道</div>shipdao</div>
       <nav class="nav">${agent ? `
-        <div class="sec">Agent · 代理</div>
-        ${link("/agent", "Orders <span class='zh'>订单</span>", counts.orders)}${link("/agent/shipped", "Shipped <span class='zh'>已发货</span>")}` : admin ? `
+        <div class="sec">${L("Agent", "代理")}</div>
+        ${link("/agent", L("Orders", "订单"), counts.orders)}${link("/agent/shipped", L("Shipped", "已发货"))}` : admin ? `
         <div class="sec">Admin</div>
-        ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/messages", "Messages", counts.messages)}${link("/admin/leads", "Leads", counts.leads)}${link("/admin/clients", "Clients")}${link("/admin/insights", "Insights", counts.health)}` : `
+        ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/messages", "Messages", counts.messages)}${link("/admin/leads", "Leads", counts.leads)}${link("/admin/clients", "Clients")}${link("/admin/claims", "Claims", counts.claims)}${link("/admin/invoices", "Invoices")}${link("/admin/partners", "Partners")}${link("/admin/insights", "Insights", counts.health)}` : ME.role === "partner" ? `
+        ${link("/partner", "Partner dashboard")}` : `
         ${link("/", "Overview")}${link("/orders", "Orders", counts.orders)}${link("/products", "Products", counts.products)}${link("/balance", "Balance")}${link("/quotes", "Quotes")}${link("/connect", "Connect store")}${link("/account", "Account")}`}
       </nav>
-      <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">Log out</a><div style="margin-top:8px;font-size:11px"><a href="#/docs" style="color:var(--muted)">Help</a> · <a href="#/terms" style="color:var(--muted)">Terms</a> · <a href="#/privacy" style="color:var(--muted)">Privacy</a></div></div>
+      <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">${agent ? L("Log out", "退出") : "Log out"}</a>${agent ? ` · <a href="#" id="agLang">${AG_ZH() ? "English" : "中文"}</a>` : ""}<div style="margin-top:8px;font-size:11px"><a href="#/docs" style="color:var(--muted)">Help</a> · <a href="#/terms" style="color:var(--muted)">Terms</a> · <a href="#/privacy" style="color:var(--muted)">Privacy</a></div></div>
     </aside><main class="main" id="main">${content}</main></div>`;
   document.getElementById("logout").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); };
+  const lg = document.getElementById("agLang");
+  if (lg) lg.onclick = (e) => { e.preventDefault(); try { localStorage.setItem("agLang", AG_ZH() ? "en" : "zh"); } catch {} route(); };
 }
 const loading = (active) => shell(active, `<div class="empty">Loading…</div>`);
 
@@ -553,6 +559,11 @@ async function qcGallery({ orderId = null, productId = null }) {
 }
 
 // ===== AGENT VIEWS =====
+// Agent language: Chinese by default, English on request (saved per device)
+const AG_ZH = () => { try { return localStorage.getItem("agLang") !== "en"; } catch { return true; } };
+const L = (en, zh) => (AG_ZH() ? zh : en);
+const AG_STATUS = { paid: ["To buy", "待采购"], sent_to_agent: ["In progress", "处理中"], shipped: ["Shipped", "已发货"], address_error: ["Address problem", "地址问题"], cancelled: ["Cancelled", "已取消"], on_hold: ["On hold", "暂停"] };
+const agPill = (s) => `<span class="pill p-${esc(s)}">${esc(AG_STATUS[s] ? L(...AG_STATUS[s]) : String(s).replace(/_/g, " "))}</span>`;
 const CARRIERS = ["YunExpress", "YanWen", "4PX", "Cainiao", "China Post", "PostNL", "DHL", "Other"];
 const trackUrl = (n) => `https://t.17track.net/en#nums=${encodeURIComponent(n)}`;
 async function agentShip(id, t) {
@@ -567,38 +578,38 @@ async function agentOrders(shippedView = false) {
   loading(active);
   const os = await rpc("agent_orders", { p_days: 30 });
   const tabs = {
-    todo: ["To buy <span class='zh'>待采购</span>", (o) => o.status === "paid"],
-    progress: ["In progress <span class='zh'>处理中</span>", (o) => o.status === "sent_to_agent"],
-    flagged: ["Problems <span class='zh'>问题</span>", (o) => o.agent_flagged_at && o.status !== "shipped"],
-    address: ["Address check <span class='zh'>地址问题</span>", (o) => o.status === "address_error"],
+    todo: [L("To buy", "待采购"), (o) => o.status === "paid"],
+    progress: [L("In progress", "处理中"), (o) => o.status === "sent_to_agent"],
+    flagged: [L("Problems", "问题"), (o) => o.agent_flagged_at && o.status !== "shipped"],
+    address: [L("Address check", "地址问题"), (o) => o.status === "address_error"],
   };
   const list = shippedView ? os.filter((o) => o.status === "shipped").reverse() : os.filter(tabs[agentTab][1]);
   const counts = { orders: os.filter((o) => o.status === "paid").length };
   const addr = (o) => { const a = o.shipping_address || {}; return [a.name || [a.first_name, a.last_name].filter(Boolean).join(" ") || o.customer_name, a.company, a.address1, a.address2, [a.zip, a.city].filter(Boolean).join(" "), a.province, a.country_code || o.country, a.phone].filter(Boolean).join("\n"); };
-  shell(active, `<div class="head"><div><h1>${shippedView ? "Shipped <span class='zh'>已发货</span>" : "Orders <span class='zh'>订单</span>"}</h1>
-      <p class="muted" style="margin:4px 0 0">${shippedView ? "Last 30 days." : "Buy, check, pack and ship. Add tracking and it goes to the store automatically. 填写物流单号后会自动同步到店铺。"}</p></div>
-      ${shippedView ? "" : `<div class="row"><button class="ghost" id="agCsv">Export to-buy list (CSV)</button><label class="btn" style="cursor:pointer">Import tracking (CSV)<input type="file" id="agImport" accept=".csv,text/csv" hidden></label></div>`}</div>
+  shell(active, `<div class="head"><div><h1>${shippedView ? L("Shipped", "已发货") : L("Orders", "订单")}</h1>
+      <p class="muted" style="margin:4px 0 0">${shippedView ? L("Last 30 days.", "最近30天。") : L("Buy, check, pack and ship. Add tracking and it goes to the store automatically.", "采购、质检、打包、发货。填写物流单号后会自动同步到店铺。")}</p></div>
+      ${shippedView ? "" : `<div class="row"><button class="ghost" id="agCsv">${L("Export to-buy list (CSV)", "导出采购清单 (CSV)")}</button><label class="btn" style="cursor:pointer">${L("Import tracking (CSV)", "导入物流单号 (CSV)")}<input type="file" id="agImport" accept=".csv,text/csv" hidden></label></div>`}</div>
     ${shippedView ? "" : `<div class="chips" style="margin-bottom:14px">${Object.entries(tabs).map(([k, [l, fn]]) => `<button class="sm ${agentTab === k ? "on" : ""}" data-at="${k}">${l} <span class="muted">${os.filter(fn).length}</span></button>`).join("")}</div>`}
     ${list.length ? list.map((o) => `<div class="card ag-card" data-ao="${o.id}">
-      <div class="row" style="justify-content:space-between"><div><b>${esc(o.order_number || "–")}</b> <span class="muted small">· ${esc(o.store)} · paid ${o.paid_at ? ago(o.paid_at) : "–"}</span></div>
-        <div class="row">${pill(o.status)}<span class="small muted">Ref ${esc(o.id.slice(0, 8))}</span></div></div>
+      <div class="row" style="justify-content:space-between"><div><b>${esc(o.order_number || "–")}</b> <span class="muted small">· ${esc(o.store)} · ${L("paid", "付款")} ${o.paid_at ? ago(o.paid_at) : "–"}</span></div>
+        <div class="row">${agPill(o.status)}<span class="small muted">${L("Ref", "编号")} ${esc(o.id.slice(0, 8))}</span></div></div>
       ${o.agent_note ? `<div class="notice" style="margin-top:10px;background:var(--red-soft);color:var(--red)">⚠ ${esc(o.agent_note)}</div>` : ""}
       <div class="ag-grid" style="margin-top:10px">
         <div><div class="ag-items">${(o.items || []).map((i) => `<div class="ag-item">${thumb(i.image_url)}<div><b>${esc(i.quantity || 1)}×</b> ${esc(i.title)}${i.variant_title ? ` <span class="muted">(${esc(i.variant_title)})</span>` : ""}
-            <div class="small muted">${i.sku ? "SKU " + esc(i.sku) + " · " : ""}${i.source_url ? link(i.source_url, "Supplier link 采购链接") : "<span style='color:var(--red)'>no supplier link</span>"}${i.notes ? " · " + esc(i.notes) : ""}</div></div></div>`).join("")}</div>
-          <div class="small muted" style="margin-bottom:4px">QC photos <span class="zh">质检照片</span> (${o.photos})</div><div data-qc="${o.id}"></div>
-          ${shippedView ? "" : `<label class="btn ghost sm" style="cursor:pointer;margin-top:6px">+ Add photos <span class="zh">上传照片</span><input type="file" accept="image/*" multiple hidden data-upload="${o.id}"></label>`}</div>
-        <div><div class="row" style="justify-content:space-between"><span class="small muted">Ship to <span class="zh">收件地址</span></span><button class="ghost sm" data-copy="${o.id}">Copy</button></div>
+            <div class="small muted">${i.sku ? "SKU " + esc(i.sku) + " · " : ""}${i.source_url ? link(i.source_url, L("Supplier link", "采购链接")) : `<span style='color:var(--red)'>${L("no supplier link", "无采购链接")}</span>`}${i.notes ? " · " + esc(i.notes) : ""}</div></div></div>`).join("")}</div>
+          <div class="small muted" style="margin-bottom:4px">${L("QC photos", "质检照片")} (${o.photos})</div><div data-qc="${o.id}"></div>
+          ${shippedView ? "" : `<label class="btn ghost sm" style="cursor:pointer;margin-top:6px">+ ${L("Add photos", "上传照片")}<input type="file" accept="image/*" multiple hidden data-upload="${o.id}"></label>`}</div>
+        <div><div class="row" style="justify-content:space-between"><span class="small muted">${L("Ship to", "收件地址")}</span><button class="ghost sm" data-copy="${o.id}">${L("Copy", "复制")}</button></div>
           <div class="ag-addr" data-addr="${o.id}">${esc(addr(o))}</div>
-          ${o.note ? `<div class="small" style="margin-top:6px">Note: ${esc(o.note)}</div>` : ""}
-          ${shippedView ? `<div style="margin-top:10px">Tracking: ${link(o.tracking_url, o.tracking_number || "–")} <span class="muted small">${esc(o.tracking_company || "")}</span>${o.actual_cost != null ? ` · cost ${eur(o.actual_cost)}` : ""}</div>` : `
-          ${o.status === "paid" ? `<button class="sm" style="margin-top:10px" data-accept="${o.id}">Accept order <span class="zh">接单</span></button>` : ""}
+          ${o.note ? `<div class="small" style="margin-top:6px">${L("Note", "备注")}: ${esc(o.note)}</div>` : ""}
+          ${shippedView ? `<div style="margin-top:10px">${L("Tracking", "物流单号")}: ${link(o.tracking_url, o.tracking_number || "–")} <span class="muted small">${esc(o.tracking_company || "")}</span>${o.actual_cost != null ? ` · ${L("cost", "成本")} ${eur(o.actual_cost)}` : ""}</div>` : `
+          ${o.status === "paid" ? `<button class="sm" style="margin-top:10px" data-accept="${o.id}">${L("Accept order", "接单")}</button>` : ""}
           ${["paid", "sent_to_agent"].includes(o.status) ? `<form class="ship" data-ship="${o.id}" style="margin-top:10px;display:grid;gap:6px">
-            <input name="number" placeholder="Tracking number 物流单号" required>
-            <div class="row" style="gap:6px;flex-wrap:nowrap"><select name="carrier">${CARRIERS.map((c) => `<option>${c}</option>`).join("")}</select><input name="cost" type="number" step="0.01" min="0" placeholder="Your cost € 成本"></div>
-            <button class="red sm">Ship + send tracking <span class="zh" style="color:#fff">发货</span></button></form>` : ""}
-          <form data-flag="${o.id}" class="row" style="margin-top:8px;gap:6px;flex-wrap:nowrap"><input name="note" placeholder="Problem? Out of stock, wrong size… 有问题请填写" value="${esc(o.agent_note || "")}"><button class="ghost sm">${o.agent_note ? "Update" : "Report"}</button></form>`}
-        </div></div></div>`).join("") : `<div class="card empty">${shippedView ? "Nothing shipped yet." : "Nothing here. 暂无订单。"}</div>`}`, counts);
+            <input name="number" placeholder="${L("Tracking number", "物流单号")}" required>
+            <div class="row" style="gap:6px;flex-wrap:nowrap"><select name="carrier">${CARRIERS.map((c) => `<option>${c}</option>`).join("")}</select><input name="cost" type="number" step="0.01" min="0" placeholder="${L("Your cost €", "成本 €")}"></div>
+            <button class="red sm">${L("Ship + send tracking", "发货并同步物流")}</button></form>` : ""}
+          <form data-flag="${o.id}" class="row" style="margin-top:8px;gap:6px;flex-wrap:nowrap"><input name="note" placeholder="${L("Problem? Out of stock, wrong size…", "有问题？缺货、尺码不对……")}" value="${esc(o.agent_note || "")}"><button class="ghost sm">${o.agent_note ? L("Update", "更新") : L("Report", "报告")}</button></form>`}
+        </div></div></div>`).join("") : `<div class="card empty">${shippedView ? L("Nothing shipped yet.", "暂无已发货订单。") : L("Nothing here.", "暂无订单。")}</div>`}`, counts);
 
   // photos
   list.forEach(async (o) => { if (Number(o.photos)) { const el = document.querySelector(`[data-qc="${o.id}"]`); if (el) el.innerHTML = await qcGallery({ orderId: o.id }); } });
@@ -608,32 +619,32 @@ async function agentOrders(shippedView = false) {
   }));
   document.querySelectorAll("[data-at]").forEach((b) => (b.onclick = () => { agentTab = b.dataset.at; agentOrders(); }));
   document.querySelectorAll("[data-copy]").forEach((b) => (b.onclick = async () => {
-    try { await navigator.clipboard.writeText(document.querySelector(`[data-addr="${b.dataset.copy}"]`).textContent); toast("Address copied 已复制"); } catch { toast("Copy failed", true); }
+    try { await navigator.clipboard.writeText(document.querySelector(`[data-addr="${b.dataset.copy}"]`).textContent); toast(L("Address copied", "地址已复制")); } catch { toast(L("Copy failed", "复制失败"), true); }
   }));
   document.querySelectorAll("[data-accept]").forEach((b) => (b.onclick = () => busy(b, async () => { await rpc("agent_update_order", { p_order: b.dataset.accept, p_action: "accept" }); agentOrders(); })));
   document.querySelectorAll("[data-ship]").forEach((f) => (f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
     try { const r = await agentShip(f.dataset.ship, { number: f.number.value.trim(), carrier: f.carrier.value, cost: f.cost.value });
-      toast(r.shopify === "fulfilled" ? "Shipped. The customer gets the tracking email. 已发货" : "Shipped (" + r.shopify + ")"); agentOrders(); }
+      toast(r.shopify === "fulfilled" ? L("Shipped. The customer gets the tracking email.", "已发货，客户会收到物流邮件。") : L("Shipped", "已发货") + " (" + r.shopify + ")"); agentOrders(); }
     catch (err) { toast(err.message, true); }
   }); }));
   document.querySelectorAll("[data-flag]").forEach((f) => (f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
-    await rpc("agent_update_order", { p_order: f.dataset.flag, p_action: "flag", p_note: f.note.value }); toast(f.note.value.trim() ? "Reported to Shipdao 已通知" : "Cleared"); agentOrders();
+    await rpc("agent_update_order", { p_order: f.dataset.flag, p_action: "flag", p_note: f.note.value }); toast(f.note.value.trim() ? L("Reported to Shipdao", "已通知 Shipdao") : L("Cleared", "已清除")); agentOrders();
   }); }));
   const csvBtn = document.getElementById("agCsv");
   if (csvBtn) csvBtn.onclick = () => {
     const todo = os.filter((o) => ["paid", "sent_to_agent"].includes(o.status) && !o.tracking_number);
-    if (!todo.length) return toast("Nothing to buy", true);
+    if (!todo.length) return toast(L("Nothing to buy", "暂无需要采购的订单"), true);
     const rows = [];
     for (const o of todo) { const a = o.shipping_address || {}; for (const i of o.items || []) rows.push([o.id, o.order_number, o.store, a.name || [a.first_name, a.last_name].filter(Boolean).join(" ") || o.customer_name, a.address1, a.address2, a.city, a.zip, a.province, a.country_code || o.country, a.phone, i.sku, i.title, i.variant_title, i.quantity, i.source_url, "", "", ""]); }
     downloadCsv(`shipdao-to-buy-${new Date().toISOString().slice(0, 10)}.csv`, ["Ref", "Order", "Store", "Name", "Address 1", "Address 2", "City", "Zip", "Province", "Country", "Phone", "SKU", "Product", "Variant", "Qty", "Supplier link", "Tracking", "Carrier", "Cost"], rows);
-    toast("Fill in Tracking, Carrier and Cost, then use Import tracking. 填写后导入");
+    toast(L("Fill in Tracking, Carrier and Cost, then use Import tracking.", "请填写 Tracking、Carrier、Cost 三列，然后导入。"));
   };
   const imp = document.getElementById("agImport");
   if (imp) imp.onchange = async () => {
     const text = await imp.files[0].text();
     const rows = parseCsv(text); const head = (rows.shift() || []).map((h) => h.trim().toLowerCase());
     const col = (n) => head.indexOf(n);
-    if (col("ref") < 0 || col("tracking") < 0) return toast("CSV needs the columns Ref and Tracking", true);
+    if (col("ref") < 0 || col("tracking") < 0) return toast(L("CSV needs the columns Ref and Tracking", "CSV 需要 Ref 和 Tracking 两列"), true);
     const done = new Set(); let ok = 0, fail = 0;
     for (const r of rows) {
       const ref = (r[col("ref")] || "").trim(), number = (r[col("tracking")] || "").trim();
@@ -643,7 +654,7 @@ async function agentOrders(shippedView = false) {
       try { await agentShip(o.id, { number, carrier: col("carrier") >= 0 ? r[col("carrier")] : "", cost: col("cost") >= 0 ? (r[col("cost")] || "").replace(",", ".") : "" }); ok++; }
       catch (err) { fail++; toast(`${o.order_number}: ${err.message}`, true); }
     }
-    toast(`${ok} order(s) shipped${fail ? `, ${fail} failed` : ""}`); agentOrders();
+    toast(L(`${ok} order(s) shipped${fail ? `, ${fail} failed` : ""}`, `已发货 ${ok} 单${fail ? `，失败 ${fail} 单` : ""}`)); agentOrders();
   };
 }
 function parseCsv(text) {
@@ -759,10 +770,11 @@ async function clientOrderDetail(o, reload) {
         <div class="muted small" style="margin-top:8px">Received ${ago(o.created_at)}${o.paid_at ? ` · paid ${ago(o.paid_at)}` : ""}${o.shipped_at ? ` · shipped ${ago(o.shipped_at)}` : ""}</div>
         ${o.tracking_number ? `<div style="margin-top:6px">Tracking: ${link(o.tracking_url, o.tracking_number)} ${o.tracking_company ? `<span class="muted small">${esc(o.tracking_company)}</span>` : ""}</div>` : ""}
         ${o.note ? `<div class="muted small" style="margin-top:6px">Note: ${esc(o.note)}</div>` : ""}</div></div>
-    <div id="qcBox"></div>
+    <div id="qcBox"></div><div id="claimBox"></div>
     <div class="hr" style="margin:14px 0 6px"></div><b class="small">Messages about this order</b>`;
   qcGallery({ orderId: o.id }).then((g) => { const el = document.getElementById("qcBox"); if (el && g) el.innerHTML = `<div class="muted small" style="margin-top:12px">Quality check photos</div>${g}`; });
   await openThread({ orderId: o.id, clientId: ME.client?.id, title: `Order ${o.order_number || ""}`, extra, onClose: reload });
+  claimBox(o);
   const f = document.getElementById("addrForm");
   if (f) f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
     await rpc("client_fix_address", { p_order: o.id, p_address: Object.fromEntries(new FormData(f).entries()) });
@@ -812,7 +824,7 @@ async function clientOrders() {
 }
 async function clientBalance() {
   loading("/balance");
-  const d = await rpc("client_dashboard");
+  const [d, { data: invs }] = await Promise.all([rpc("client_dashboard"), sb.from("invoices").select("*").order("issued_at", { ascending: false })]);
   const months = [...new Set(d.ledger.map((l) => l.created_at.slice(0, 7)))];
   const bank = !isPlaceholder(CONFIG.TOPUP_INSTRUCTIONS);
   shell("/balance", `<div class="head"><div><h1>Balance</h1><p class="muted" style="margin:4px 0 0">Every top-up and every charge, with your balance after each one.</p></div></div>
@@ -826,7 +838,11 @@ async function clientBalance() {
       ${d.payments.filter((p) => p.method === "banktransfer").map((p) => `<tr><td>${date(p.created_at)}</td><td>${esc(p.reference || "")}</td><td>${pill(p.status === "paid" ? "paid" : p.status)}</td><td class="num">${eur(p.amount)}</td></tr>`).join("")}</table></div>` : ""}
     <div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3>Statement</h3>
       <div class="row"><select id="bMonth" style="width:auto"><option value="">All months</option>${months.map((m) => `<option value="${m}">${new Date(m + "-01").toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</option>`).join("")}</select><button class="ghost sm" id="bCsv">Export (CSV)</button></div></div>
-      <div id="bList"></div></div>`, clientCounts(d));
+      <div id="bList"></div></div>
+    <div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3>Invoices</h3>${ME.client?.company_name ? "" : `<a class="small" href="#/account">Add your company details →</a>`}</div>
+      ${invs?.length ? `<table class="tbl" style="margin-top:8px"><tr><th>Number</th><th>Date</th><th class="num">Amount</th><th></th></tr>${invs.map((i) => `<tr><td>${esc(i.number)}</td><td>${date(i.issued_at)}</td><td class="num">${eur(i.gross)}</td><td class="num"><button class="ghost sm" data-inv="${i.id}">PDF</button></td></tr>`).join("")}</table>`
+        : `<div class="empty">You get an invoice for every top-up. They appear here.</div>`}</div>`, clientCounts(d));
+  document.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = () => openInvoice(invs.find((i) => i.id === b.dataset.inv))));
   bindTopup();
   const rows = () => { const m = document.getElementById("bMonth").value; return d.ledger.filter((l) => !m || l.created_at.startsWith(m)); };
   const draw = () => {
@@ -905,6 +921,13 @@ async function clientAccount() {
     <div class="field"><label>Store URL</label><input name="store_url" value="${esc(ME.client?.store_url)}"></div>
     <div class="field"><label>WhatsApp number</label><input name="whatsapp" value="${esc(ME.client?.whatsapp)}" placeholder="+31…"></div>
     <button>Save</button></form>
+    <div class="hr"></div><h3>Invoice details</h3><p class="muted small" style="margin:4px 0 10px">Shown on the invoice you get for every top-up. Outside the Netherlands with an EU VAT ID? Then VAT is reverse charged.</p>
+    <form id="billForm">
+      <div class="field"><label>Company name</label><input name="company" value="${esc(ME.client?.company_name)}" placeholder="As registered"></div>
+      <div class="field"><label>Address</label><textarea name="address" rows="2" placeholder="Street + number, postcode, city">${esc(ME.client?.billing_address)}</textarea></div>
+      <div class="grid g2" style="gap:12px"><div class="field"><label>Country (2 letters)</label><input name="country" maxlength="2" value="${esc(ME.client?.country)}" placeholder="NL"></div>
+      <div class="field"><label>VAT ID</label><input name="vat" value="${esc(ME.client?.vat_id)}" placeholder="NL000000000B01"></div></div>
+      <button class="ghost">Save invoice details</button></form>
     <div class="hr"></div><form id="pwForm"><div class="field"><label>New password</label><input name="pw" type="password" minlength="8" required></div><button class="ghost">Change password</button></form></div>`);
   document.getElementById("accForm").onsubmit = async (e) => {
     e.preventDefault(); const f = new FormData(e.target);
@@ -913,6 +936,8 @@ async function clientAccount() {
       ME = await rpc("whoami"); toast("Saved"); clientAccount();
     });
   };
+  document.getElementById("billForm").onsubmit = (e) => { e.preventDefault(); const f = new FormData(e.target);
+    busy(submitBtn(e.target), async () => { await rpc("update_my_billing", { p_company: f.get("company"), p_address: f.get("address"), p_country: f.get("country"), p_vat: f.get("vat") }); ME = await rpc("whoami"); toast("Invoice details saved. They are used from your next top-up."); }); };
   document.getElementById("pwForm").onsubmit = async (e) => {
     e.preventDefault(); const form = e.target;
     await busy(submitBtn(form), async () => {
@@ -959,15 +984,16 @@ async function clientProducts() {
 
 // ===== ADMIN VIEWS =====
 async function adminCounts() {
-  const [q, o, p, m, l, h] = await Promise.all([
+  const [q, o, p, m, l, h, cl] = await Promise.all([
     sb.from("quotes").select("id", { count: "exact", head: true }).eq("status", "requested"),
     sb.from("orders").select("id", { count: "exact", head: true }).in("status", ["paid", "on_hold", "issue", "address_error"]),
     sb.from("products").select("id", { count: "exact", head: true }).eq("sourcing_status", "to_source").or("shopify_status.is.null,shopify_status.neq.DELETED"),
     sb.from("messages").select("id", { count: "exact", head: true }).eq("from_admin", false).is("read_by_admin_at", null),
     sb.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
     sb.from("system_events").select("id", { count: "exact", head: true }).eq("ok", false).gt("created_at", new Date(Date.now() - 864e5).toISOString()),
+    sb.from("claims").select("id", { count: "exact", head: true }).eq("status", "open"),
   ]).then((rs) => rs.map((x) => x.count));
-  return { quotes: q || 0, orders: o || 0, products: p || 0, messages: m || 0, leads: l || 0, health: h || 0 };
+  return { quotes: q || 0, orders: o || 0, products: p || 0, messages: m || 0, leads: l || 0, health: h || 0, claims: cl || 0 };
 }
 async function adminOverview() {
   loading("/admin");
@@ -1309,7 +1335,7 @@ async function adminProducts() {
   const cost = (p) => [p.cost_product, p.cost_shipping, p.cost_other].some((x) => x != null) ? (Number(p.cost_product || 0) + Number(p.cost_shipping || 0) + Number(p.cost_other || 0)) : null;
   const num = (k, v) => `<input class="n" type="number" step="0.01" min="0" name="${k}" value="${v ?? ""}">`;
   shell("/admin/products", `<div class="head"><div><h1>Products</h1><p class="muted" style="margin:4px 0 0">Every product from your clients' Shopify stores. Find a supplier, fill in the costs, mark as priced. Orders for priced products are charged automatically.</p></div>
-      <div class="row"><button class="ghost" id="pCsv">Export for agent (CSV)</button><button id="pSync" ${shops?.length ? "" : "disabled title='No connected stores'"}>Sync from Shopify</button></div></div>
+      <div class="row"><button class="ghost" id="pCsv">Export (CSV)</button><label class="btn ghost" style="cursor:pointer">Import prices (CSV)<input type="file" id="pImport" accept=".csv,text/csv" hidden></label><button id="pSync" ${shops?.length ? "" : "disabled title='No connected stores'"}>Sync from Shopify</button></div></div>
     <div class="row" style="justify-content:space-between;margin-bottom:14px">
       <div class="chips">${[["to_source", "To source"], ["sourcing", "Sourcing"], ["priced", "Priced"], ["skip", "Skipped"], ["all", "All"]].map(([k, l]) => `<button class="sm ${prodFilter === k ? "on" : ""}" data-pf="${k}">${l}</button>`).join("")}</div>
       <div class="row"><select id="pClient" style="width:auto"><option value="">All clients</option>${(cs || []).map((c) => `<option value="${c.id}" ${prodClient === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
@@ -1397,15 +1423,16 @@ async function adminProducts() {
   document.getElementById("pSearch").oninput = (e) => { const q = e.target.value.trim().toLowerCase(); rows.forEach((tr) => (tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? "" : "none")); };
   document.getElementById("pSync").onclick = (e) => busy(e.currentTarget, async () => { if ((await syncProducts()) != null) adminProducts(); });
   document.getElementById("pCsv").onclick = () => {
-    const todo = list.filter((p) => ["to_source", "sourcing"].includes(p.sourcing_status));
-    if (!todo.length) return toast("Nothing to source in this view", true);
+    const todo = list;
+    if (!todo.length) return toast("Nothing to export in this view", true);
     const cell = (v) => { let x = String(v ?? ""); if (/^[=+\-@\t\r]/.test(x)) x = "'" + x; return `"${x.replace(/"/g, '""')}"`; };
-    const lines = [["Client", "Product", "Variant", "SKU", "Shop price", "Image", "Shop link", "Supplier link", "Notes"].join(",")]
-      .concat(todo.map((p) => [p.clients?.name, p.name, p.variant_title, p.sku, p.shop_price, p.image_url, p.shop_url, p.source_url, p.notes].map(cell).join(",")));
+    const lines = [["ID", "Client", "Product", "Variant", "SKU", "Shop price", "Image", "Shop link", "Supplier link", "Notes", "Product €", "Shipping €", "Other €", "Margin €", "Days", "Status"].join(",")]
+      .concat(todo.map((p) => [p.id, p.clients?.name, p.name, p.variant_title, p.sku, p.shop_price, p.image_url, p.shop_url, p.source_url, p.notes, p.cost_product, p.cost_shipping, p.cost_other, p.margin, p.delivery_days, p.sourcing_status].map(cell).join(",")));
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }));
     a.download = `shipdao-to-source-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toast(`${todo.length} product(s) exported for your agent`);
+    toast(`${todo.length} product(s) exported. Fill in the € columns and import them again.`);
   };
+  document.getElementById("pImport").onchange = (e) => importPrices(e.target, list);
 }
 async function adminClients() {
   loading("/admin/clients");
@@ -1422,11 +1449,16 @@ async function adminClients() {
     </div>`).join("") : `<div class="card empty">No clients yet.</div>`}`, counts);
   bindClientActions(adminClients);
   document.querySelectorAll("[data-goprod]").forEach((a) => (a.onclick = () => { prodClient = a.dataset.goprod; prodFilter = "to_source"; }));
+  const { data: partners } = await sb.from("partners").select("id,code");
+  const { data: refs } = await sb.from("clients").select("id,referred_by");
   document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = async () => {
     const c = ov.clients.find((x) => x.id === b.dataset.edit);
-    const r = await ask({ title: "Edit client", fields: [{ name: "name", label: "Name", value: c.name }, { name: "status", label: "Status", type: "select", options: ["lead", "active", "paused"], value: c.status },
+    const curRef = (partners || []).find((p) => p.id === (refs || []).find((x) => x.id === c.id)?.referred_by)?.code || "none";
+    const r = await ask({ title: "Edit client", fields: [{ name: "ref", label: "Referred by partner", type: "select", options: ["none", ...(partners || []).map((p) => p.code)], value: curRef },{ name: "name", label: "Name", value: c.name }, { name: "status", label: "Status", type: "select", options: ["lead", "active", "paused"], value: c.status },
       { name: "default_margin", label: "Default margin (€ per order)", type: "number", value: c.default_margin }, { name: "whatsapp", label: "WhatsApp", value: c.whatsapp }] });
-    if (!r) return; const { error } = await sb.from("clients").update({ ...r, whatsapp: r.whatsapp || null, default_margin: r.default_margin === "" ? null : Number(r.default_margin) }).eq("id", c.id);
+    if (!r) return; const ref = r.ref; delete r.ref;
+    if (ref !== curRef) await rpc("admin_set_referrer", { p_client: c.id, p_partner: (partners || []).find((p) => p.code === ref)?.id || null });
+    const { error } = await sb.from("clients").update({ ...r, whatsapp: r.whatsapp || null, default_margin: r.default_margin === "" ? null : Number(r.default_margin) }).eq("id", c.id);
     error ? toast(error.message, true) : adminClients();
   }));
   const productForm = async (p, clientId) => {
@@ -1444,11 +1476,220 @@ async function adminClients() {
   document.querySelectorAll("[data-pedit]").forEach((b) => (b.onclick = () => productForm(ps.find((x) => x.id === b.dataset.pedit))));
 }
 
+// ===== INVOICES =====
+function openInvoice(inv) {
+  if (!inv) return;
+  const b = inv.buyer || {}, nl = (t) => esc(t || "").replace(/\n/g, "<br>");
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${esc(inv.number)}</title><style>
+    body{font:14px/1.5 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1E1512;max-width:760px;margin:40px auto;padding:0 32px}
+    h1{font-size:28px;margin:0}.top{display:flex;justify-content:space-between;gap:24px;margin-bottom:36px}.muted{color:#6b5d52}
+    .seal{display:inline-grid;place-items:center;width:34px;height:34px;border:2px solid #B5301F;color:#B5301F;border-radius:4px;font:20px serif;margin-right:8px;vertical-align:middle}
+    table{width:100%;border-collapse:collapse;margin:24px 0}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #e8dcc8}th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#6b5d52}
+    .r{text-align:right}.tot td{border:0;padding:4px 8px}.tot .big td{font-size:18px;font-weight:700;border-top:2px solid #1E1512;padding-top:10px}
+    .paid{display:inline-block;border:2px solid #2e7d32;color:#2e7d32;font-weight:700;padding:2px 10px;border-radius:4px;transform:rotate(-4deg)}
+    .foot{margin-top:48px;font-size:12px;color:#6b5d52;border-top:1px solid #e8dcc8;padding-top:12px}
+    @media print{body{margin:0 auto}.noprint{display:none}}</style></head><body>
+    <p class="noprint" style="background:#FBF3EC;padding:10px 14px;border-radius:8px">Choose <b>Save as PDF</b> in the print window to download this invoice.</p>
+    <div class="top"><div><span class="seal">道</span><b style="font-size:20px">${esc(C.TRADE_NAME)}</b><div class="muted" style="margin-top:8px">${esc(C.LEGAL_NAME)}<br>${nl(C.ADDRESS)}<br>KvK ${esc(C.KVK)} · VAT ${esc(C.VAT)}<br>${esc(C.EMAIL)}</div></div>
+      <div style="text-align:right"><h1>Invoice</h1><div class="muted">${esc(inv.number)}<br>Date ${date(inv.issued_at)}</div><div style="margin-top:12px"><span class="paid">PAID</span></div></div></div>
+    <div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.04em">Billed to</div>
+    <div><b>${esc(b.name || "")}</b><br>${nl(b.address)}${b.country ? "<br>" + esc(b.country) : ""}${b.vat_id ? "<br>VAT " + esc(b.vat_id) : ""}${b.email ? "<br>" + esc(b.email) : ""}</div>
+    <table><tr><th>Description</th><th class="r">Amount</th></tr><tr><td>${esc(inv.description)}</td><td class="r">${eur(inv.net)}</td></tr></table>
+    <table class="tot"><tr><td class="r">Subtotal</td><td class="r" style="width:140px">${eur(inv.net)}</td></tr>
+      <tr><td class="r">VAT ${Number(inv.vat_rate)}%</td><td class="r">${eur(inv.vat)}</td></tr>
+      <tr class="big"><td class="r">Total paid</td><td class="r">${eur(inv.gross)}</td></tr></table>
+    ${inv.vat_note ? `<p><b>${esc(inv.vat_note)}</b></p>` : ""}
+    <p class="muted">This amount was added to your prepaid Shipdao balance. Orders are paid from that balance.</p>
+    <div class="foot">${esc(C.TRADE_NAME)} is a trade name of ${esc(C.LEGAL_NAME)} · ${esc(C.ADDRESS)} · KvK ${esc(C.KVK)} · VAT ${esc(C.VAT)}</div>
+    <script>setTimeout(function(){window.print()},400)<\/script></body></html>`;
+  const w = window.open("", "_blank");
+  if (!w) return toast("Your browser blocked the invoice window. Allow pop-ups for this site and try again.", true);
+  w.document.open(); w.document.write(html); w.document.close();
+}
+async function adminInvoices() {
+  loading("/admin/invoices");
+  const [{ data: invs }, counts] = await Promise.all([sb.from("invoices").select("*, clients(name)").order("issued_at", { ascending: false }).limit(2000), adminCounts()]);
+  const months = [...new Set((invs || []).map((i) => i.issued_at.slice(0, 7)))];
+  shell("/admin/invoices", `<div class="head"><div><h1>Invoices</h1><p class="muted" style="margin:4px 0 0">One for every real top-up, numbered without gaps. Test payments get no invoice. Export a month for your bookkeeping.</p></div>
+      <div class="row"><select id="iMonth" style="width:auto"><option value="">All months</option>${months.map((m) => `<option value="${m}">${m}</option>`).join("")}</select><button class="ghost" id="iCsv">Export (CSV)</button></div></div>
+    <div class="card" id="iList"></div>`, counts);
+  const rows = () => { const m = document.getElementById("iMonth").value; return (invs || []).filter((i) => !m || i.issued_at.startsWith(m)); };
+  const draw = () => { const ls = rows();
+    document.getElementById("iList").innerHTML = ls.length ? `<div class="row small muted" style="margin-bottom:8px">Total ${eur(ls.reduce((a, i) => a + Number(i.gross), 0))} · of which VAT ${eur(ls.reduce((a, i) => a + Number(i.vat), 0))}</div>
+      <div class="scroll"><table class="tbl"><tr><th>Number</th><th>Date</th><th>Client</th><th class="num">Net</th><th class="num">VAT</th><th class="num">Total</th><th></th></tr>
+      ${ls.map((i) => `<tr><td>${esc(i.number)}</td><td>${date(i.issued_at)}</td><td>${esc(i.buyer?.name || i.clients?.name || "")}${i.vat_rate == 0 ? ` <span class="muted small">0%</span>` : ""}</td><td class="num">${eur(i.net)}</td><td class="num">${eur(i.vat)}</td><td class="num"><b>${eur(i.gross)}</b></td><td class="num"><button class="ghost sm" data-inv="${i.id}">PDF</button></td></tr>`).join("")}</table></div>` : `<div class="empty">No invoices yet.</div>`;
+    document.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = () => openInvoice(invs.find((i) => i.id === b.dataset.inv)))); };
+  draw(); document.getElementById("iMonth").onchange = draw;
+  document.getElementById("iCsv").onclick = () => { const ls = rows(); if (!ls.length) return toast("Nothing to export", true);
+    downloadCsv(`shipdao-invoices-${document.getElementById("iMonth").value || "all"}.csv`, ["Number", "Date", "Client", "Country", "VAT ID", "Net", "VAT %", "VAT", "Total", "VAT note"],
+      ls.map((i) => [i.number, i.issued_at.slice(0, 10), i.buyer?.name, i.buyer?.country, i.buyer?.vat_id, i.net, i.vat_rate, i.vat, i.gross, i.vat_note])); };
+}
+
+// ===== CLAIMS (lost / damaged / wrong) =====
+const CLAIM_TYPES = { lost: "Lost parcel", damaged: "Damaged item", wrong: "Wrong item" };
+async function claimPhotos(paths) {
+  if (!paths?.length) return "";
+  const { data } = await sb.storage.from("claims").createSignedUrls(paths, 3600);
+  return `<div class="qc">${(data || []).filter((u) => u.signedUrl).map((u) => `<a href="${esc(u.signedUrl)}" target="_blank" rel="noopener"><img src="${esc(u.signedUrl)}" alt="Photo from the store" loading="lazy"></a>`).join("")}</div>`;
+}
+async function claimBox(o) {
+  const box = document.getElementById("claimBox"); if (!box) return;
+  const { data: cls } = await sb.from("claims").select("*").eq("order_id", o.id).order("created_at", { ascending: false });
+  const open = (cls || []).find((c) => c.status === "open");
+  const past = (cls || []).filter((c) => c.status !== "open");
+  const label = { open: "Being reviewed", reshipped: "We reship it", credited: "Credited to your balance", rejected: "Not accepted" };
+  box.innerHTML = `${(cls || []).map((c) => `<div class="notice" style="margin-top:12px"><b>${esc(CLAIM_TYPES[c.type])}</b> · ${esc(label[c.status])}${c.amount ? ` · ${eur(c.amount)}` : ""}<div class="small muted">Reported ${date(c.created_at)}${c.resolution ? " · " + esc(c.resolution) : ""}</div><div data-cph="${c.id}"></div></div>`).join("")}
+    ${o.status === "shipped" && !open ? `<button class="ghost sm" id="claimBtn" style="margin-top:12px">Report a problem with this parcel</button>` : ""}`;
+  (cls || []).forEach(async (c) => { const el = box.querySelector(`[data-cph="${c.id}"]`); if (el) el.innerHTML = await claimPhotos(c.photos); });
+  const btn = document.getElementById("claimBtn"); if (!btn) return;
+  btn.onclick = () => {
+    const lostFrom = o.shipped_at ? new Date(new Date(o.shipped_at).getTime() + 30 * 864e5) : null;
+    btn.outerHTML = `<form id="claimForm" class="card" style="margin-top:12px;background:var(--rice, #F7F6F3)"><b>Report a problem</b>
+      <div class="field" style="margin-top:8px"><label>What happened?</label><select name="type"><option value="damaged">Damaged item</option><option value="wrong">Wrong item</option><option value="lost">Lost parcel (no delivery scan)</option></select></div>
+      <p class="small muted" id="claimHint" style="margin:-4px 0 8px"></p>
+      <div class="field"><label>Explain briefly</label><textarea name="note" rows="2" maxlength="1000" placeholder="E.g. the zipper is broken, size M instead of L…"></textarea></div>
+      <div class="field"><label>Photos (needed for damaged or wrong items)</label><input type="file" name="photos" accept="image/*" multiple></div>
+      <button class="red">Send report</button></form>`;
+    const f = document.getElementById("claimForm"), hint = document.getElementById("claimHint");
+    const upd = () => { hint.textContent = f.type.value === "lost" ? (lostFrom && lostFrom > new Date() ? `A parcel counts as lost from ${date(lostFrom)} (30 days after shipping). Until then, check the tracking.` : "We reship it or credit the order price to your balance.") : "Send photos within 14 days of delivery. We reship it or credit your balance."; };
+    f.type.onchange = upd; upd();
+    f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
+      const files = [...f.photos.files], paths = [];
+      for (const file of files.slice(0, 8)) {
+        if (!/^image\//.test(file.type) || file.size > 10 * 1024 * 1024) { toast(`${file.name}: use an image under 10 MB`, true); continue; }
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+        const path = `${ME.client.id}/${o.id}/${crypto.randomUUID()}.${ext}`;
+        const up = await sb.storage.from("claims").upload(path, file, { contentType: file.type, upsert: false });
+        if (up.error) { toast(up.error.message, true); continue; }
+        paths.push(path);
+      }
+      await rpc("client_open_claim", { p_order: o.id, p_type: f.type.value, p_note: f.note.value, p_photos: paths });
+      toast("Thanks. We look at it and get back to you in the messages below."); claimBox(o);
+    }); };
+  };
+}
+let claimFilter = "open";
+async function adminClaims() {
+  loading("/admin/claims");
+  const [{ data: cls }, counts] = await Promise.all([
+    (() => { let q = sb.from("claims").select("*, clients(name), orders(order_number, price_total, tracking_number, tracking_url, shipped_at, customer_name, country)").order("created_at", { ascending: false }).limit(500);
+      return claimFilter === "all" ? q : q.eq("status", claimFilter); })(), adminCounts()]);
+  shell("/admin/claims", `<div class="head"><div><h1>Claims</h1><p class="muted" style="margin:4px 0 0">Lost, damaged or wrong parcels reported by stores. Reship sends the order back to the agent at no cost to the store. Credit puts the order price back on their balance.</p></div></div>
+    <div class="chips" style="margin-bottom:14px">${[["open", "Open"], ["reshipped", "Reshipped"], ["credited", "Credited"], ["rejected", "Rejected"], ["all", "All"]].map(([k, l]) => `<button class="sm ${claimFilter === k ? "on" : ""}" data-cf="${k}">${l}</button>`).join("")}</div>
+    ${(cls || []).length ? cls.map((c) => `<div class="card" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div><b>${esc(CLAIM_TYPES[c.type])}</b> · ${esc(c.clients?.name || "")} · order ${esc(c.orders?.order_number || "")}
+        <div class="muted small">Reported ${ago(c.created_at)} · shipped ${c.orders?.shipped_at ? date(c.orders.shipped_at) : "–"} · ${esc(c.orders?.customer_name || "")} ${esc(c.orders?.country || "")} · tracking ${link(c.orders?.tracking_url, c.orders?.tracking_number || "–")} · order price ${eur(c.orders?.price_total)}</div></div>
+        <div class="row">${pill(c.status)}${c.status === "open" ? `<button class="sm" data-dc="reship" data-id="${c.id}">Reship</button><button class="sm red" data-dc="credit" data-id="${c.id}">Credit ${eur(c.orders?.price_total)}</button><button class="sm ghost" data-dc="reject" data-id="${c.id}">Reject</button>` : ""}</div></div>
+      ${c.note ? `<p style="margin:10px 0 0">“${esc(c.note)}”</p>` : ""}${c.resolution ? `<p class="small muted" style="margin:6px 0 0">Your note: ${esc(c.resolution)}</p>` : ""}<div data-cph="${c.id}"></div></div>`).join("") : `<div class="card empty">Nothing here.</div>`}`, counts);
+  (cls || []).forEach(async (c) => { const el = document.querySelector(`[data-cph="${c.id}"]`); if (el) el.innerHTML = await claimPhotos(c.photos); });
+  document.querySelectorAll("[data-cf]").forEach((b) => (b.onclick = () => { claimFilter = b.dataset.cf; adminClaims(); }));
+  document.querySelectorAll("[data-dc]").forEach((b) => (b.onclick = async () => {
+    const what = { reship: "Reship this order?", credit: "Credit the order price to the store's balance?", reject: "Reject this report?" }[b.dataset.dc];
+    const r = await ask({ title: what, body: "The store gets a message in the order chat.", fields: [{ name: "note", label: b.dataset.dc === "reject" ? "Reason (the store sees this)" : "Note for the store (optional)", type: "textarea" }], ok: { reship: "Reship", credit: "Credit", reject: "Reject" }[b.dataset.dc] });
+    if (r === null) return;
+    await rpc("admin_decide_claim", { p_claim: b.dataset.id, p_decision: b.dataset.dc, p_note: r.note || null });
+    toast("Done. The store has been told."); adminClaims();
+  }));
+}
+
+// ===== PARTNERS =====
+const refLink = (code) => `${(CONFIG.SITE_URL || location.origin + location.pathname).replace(/\/?$/, "/")}?ref=${encodeURIComponent(code)}`;
+async function adminPartners() {
+  loading("/admin/partners");
+  const [ps, counts] = await Promise.all([rpc("admin_partners"), adminCounts()]);
+  shell("/admin/partners", `<div class="head"><div><h1>Partners</h1><p class="muted" style="margin:4px 0 0">Coaches and communities who send you stores. They earn a fixed amount per shipped order of every store they referred, for as long as that store ships.</p></div><button id="pAdd">+ Add partner</button></div>
+    ${ps.length ? ps.map((x) => { const p = x.partner, owed = Number(x.earned) - Number(x.paid); return `<div class="card" style="margin-bottom:12px">
+      <div class="row" style="justify-content:space-between"><div><h3>${esc(p.name)}</h3><div class="muted small">${esc(p.email)} · ${eur(p.commission)} per order · link <code>${esc(refLink(p.code))}</code></div></div>
+        <div class="row"><span class="small">Earned <b>${eur(x.earned)}</b> · paid ${eur(x.paid)} · <b style="color:${owed > 0 ? "var(--red)" : "inherit"}">owed ${eur(owed)}</b></span><button class="sm" data-pay="${p.id}" ${owed > 0 ? "" : "disabled"}>Record payout</button><button class="sm ghost" data-pe="${p.id}">Edit</button></div></div>
+      <div class="grid g2" style="margin-top:10px;gap:16px"><div><div class="muted small">Stores (${x.stores.length})</div>${x.stores.length ? x.stores.map((s) => `<div class="small">${esc(s.name)} ${pill(s.status)}</div>`).join("") : `<div class="small muted">None yet</div>`}</div>
+        <div><div class="muted small">Shipped orders per month</div>${x.months.length ? x.months.slice(0, 6).map((m) => `<div class="small">${esc(m.month.slice(0, 7))}: ${m.orders} orders · ${eur(m.earned)}</div>`).join("") : `<div class="small muted">No shipped orders yet</div>`}</div></div></div>`; }).join("")
+      : `<div class="card empty">No partners yet. Add one, then send them their link.</div>`}`, counts);
+  const form = async (p) => {
+    const r = await ask({ title: p ? "Edit partner" : "Add partner", body: "They log in at the portal with this email address (sign up if they have no account yet) and see their stores and earnings.",
+      fields: [{ name: "name", label: "Name", value: p?.name, required: true }, { name: "email", label: "Email", type: "email", value: p?.email, required: true },
+        { name: "code", label: "Link code (letters, numbers, dashes)", value: p?.code, placeholder: "e.g. dropship-academy", required: true }, { name: "commission", label: "Commission per shipped order (€)", type: "number", value: p?.commission ?? 0.5 }] });
+    if (!r) return;
+    await rpc("admin_save_partner", { p_id: p?.id || null, p_name: r.name, p_email: r.email, p_code: r.code, p_commission: Number(r.commission || 0) });
+    toast("Saved. Their link: " + refLink(r.code.toLowerCase().trim())); adminPartners();
+  };
+  document.getElementById("pAdd").onclick = () => form(null);
+  document.querySelectorAll("[data-pe]").forEach((b) => (b.onclick = () => form(ps.find((x) => x.partner.id === b.dataset.pe).partner)));
+  document.querySelectorAll("[data-pay]").forEach((b) => (b.onclick = async () => {
+    const x = ps.find((y) => y.partner.id === b.dataset.pay), owed = Number(x.earned) - Number(x.paid);
+    const r = await ask({ title: `Payout to ${x.partner.name}`, body: "Record what you transferred. This does not send money.", fields: [{ name: "amount", label: "Amount (€)", type: "number", value: owed.toFixed(2), required: true }, { name: "note", label: "Note", placeholder: "e.g. invoice number, month" }], ok: "Record payout" });
+    if (!r) return;
+    const { error } = await sb.from("partner_payouts").insert({ partner_id: x.partner.id, amount: Number(r.amount), note: r.note || null });
+    error ? toast(error.message, true) : (toast("Payout recorded"), adminPartners());
+  }));
+}
+async function partnerHome() {
+  shell("/partner", `<div class="empty">Loading…</div>`);
+  const x = await rpc("partner_dashboard"), p = x.partner, owed = Number(x.earned) - Number(x.paid);
+  const thisMonth = x.months.find((m) => m.month.slice(0, 7) === new Date().toISOString().slice(0, 7));
+  shell("/partner", `<div class="head"><div><h1>Hi ${esc(p.name)}</h1><p class="muted" style="margin:4px 0 0">You earn ${eur(p.commission)} for every order a store you referred ships, for as long as they ship with us.</p></div></div>
+    <div class="card"><h3>Your link</h3><p class="muted small" style="margin:4px 0 10px">Stores that sign up through this link are linked to you automatically.</p>
+      <div class="row"><input id="refLink" readonly value="${esc(refLink(p.code))}" style="flex:1;min-width:240px"><button id="refCopy">Copy</button></div></div>
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card stat"><div class="k">Stores</div><div class="v">${x.stores.length}</div></div>
+      <div class="card stat"><div class="k">This month</div><div class="v">${eur(thisMonth?.earned || 0)}</div><div class="muted small">${thisMonth?.orders || 0} shipped orders</div></div>
+      <div class="card stat"><div class="k">Still to be paid</div><div class="v">${eur(owed)}</div><div class="muted small">Paid so far ${eur(x.paid)}</div></div></div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Per month</h3>${x.months.length ? `<table class="tbl" style="margin-top:8px"><tr><th>Month</th><th class="num">Orders</th><th class="num">Earned</th></tr>${x.months.map((m) => `<tr><td>${new Date(m.month).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</td><td class="num">${m.orders}</td><td class="num">${eur(m.earned)}</td></tr>`).join("")}</table>` : `<div class="empty">No shipped orders yet.</div>`}</div>
+      <div class="card"><h3>Your stores</h3>${x.stores.length ? `<table class="tbl" style="margin-top:8px"><tr><th>Store</th><th>Since</th><th>Status</th></tr>${x.stores.map((s) => `<tr><td>${esc(s.name)}</td><td>${date(s.since)}</td><td>${pill(s.status)}</td></tr>`).join("")}</table>` : `<div class="empty">No stores yet. Share your link.</div>`}</div></div>`);
+  document.getElementById("refCopy").onclick = async () => { try { await navigator.clipboard.writeText(refLink(p.code)); toast("Link copied"); } catch { document.getElementById("refLink").select(); } };
+}
+
+// ===== BULK PRICES (CSV) =====
+async function importPrices(input, list) {
+  const file = input.files[0]; input.value = ""; if (!file) return;
+  const rows = parseCsv(await file.text()); const head = (rows.shift() || []).map((h) => h.trim().toLowerCase());
+  const col = (...names) => names.map((n) => head.indexOf(n)).find((i) => i >= 0) ?? -1;
+  const ci = { id: col("id"), prod: col("product €", "product eur", "product"), ship: col("shipping €", "shipping eur", "shipping"), other: col("other €", "other eur", "other"),
+    margin: col("margin €", "margin eur", "margin"), days: col("days", "delivery days"), link: col("supplier link"), notes: col("notes"), status: col("status") };
+  if (ci.id < 0 || ci.prod < 0 || ci.margin < 0) return toast("The CSV needs the columns ID, Product € and Margin €. Use Export (CSV) to get the right layout.", true);
+  const num = (r, i) => { if (i < 0) return undefined; const v = String(r[i] ?? "").trim().replace(/^'/, "").replace(/[€\s]/g, "").replace(",", "."); return v === "" ? undefined : Number(v); }; // empty cell = leave as it is
+  const txt = (r, i) => (i < 0 ? undefined : String(r[i] ?? "").trim().replace(/^'/, "") || undefined);
+  let ok = 0, skipped = 0; const errors = [], clients = new Set();
+  const ids = [...new Set(rows.map((r) => txt(r, ci.id)).filter(Boolean))];
+  const current = [];
+  for (let i = 0; i < ids.length; i += 100) { const { data } = await sb.from("products").select("*").in("id", ids.slice(i, i + 100)); current.push(...(data || [])); }
+  for (const r of rows) {
+    const id = txt(r, ci.id); if (!id) continue;
+    const p = current.find((x) => x.id === id) || list.find((x) => x.id === id);
+    if (!p) { errors.push(`${id}: product not found`); continue; }
+    const row = { cost_product: num(r, ci.prod), cost_shipping: num(r, ci.ship), cost_other: num(r, ci.other), margin: num(r, ci.margin), delivery_days: txt(r, ci.days), source_url: txt(r, ci.link), notes: txt(r, ci.notes) };
+    Object.keys(row).forEach((k) => row[k] === undefined && delete row[k]);
+    if (!Object.keys(row).length && !txt(r, ci.status)) continue; // nothing filled in for this product
+    if ([row.cost_product, row.cost_shipping, row.cost_other, row.margin].some((v) => v != null && !(v >= 0))) { errors.push(`${p?.name || id}: a price is not a number`); continue; }
+    const base = p || {};
+    const costs = ["cost_product", "cost_shipping", "cost_other"].map((k) => (k in row ? row[k] : base[k]) || 0);
+    row.cost_total = costs.reduce((a, b) => a + b, 0);
+    let st = txt(r, ci.status)?.toLowerCase().replace(" ", "_");
+    if (!["to_source", "sourcing", "priced", "skip"].includes(st)) st = row.cost_total > 0 && (row.margin ?? base.margin) != null ? "priced" : (base.sourcing_status || "to_source");
+    if (st === "priced" && !(row.cost_total > 0)) { skipped++; continue; }
+    if (row.margin == null && st === "priced") row.margin = base.margin ?? 0;
+    if (!("cost_product" in row) && !("cost_shipping" in row) && !("cost_other" in row)) delete row.cost_total; // costs not in this row: keep the current total
+    row.sourcing_status = st; row.active = st === "priced";
+    const { data, error } = await sb.from("products").update(row).eq("id", id).select("client_id");
+    if (error || !data?.length) { errors.push(`${p?.name || id}: ${error?.message || "product not found"}`); continue; }
+    ok++; if (row.active) clients.add(data[0].client_id);
+  }
+  errors.slice(0, 3).forEach((m) => toast(m, true));
+  toast(`${ok} product(s) updated${skipped ? `, ${skipped} skipped (no costs)` : ""}${errors.length ? `, ${errors.length} with errors` : ""}`);
+  if (clients.size) {
+    const { data: waiting } = await sb.from("orders").select("id").eq("status", "issue").in("client_id", [...clients]);
+    let released = 0;
+    for (const o of waiting || []) { const st = await rpc("admin_retry_order", { p_order: o.id }).catch(() => null); if (st === "paid") released++; }
+    if (released) toast(`${released} waiting order(s) are now paid and ready to ship`);
+  }
+  adminProducts();
+}
+
 // ===== ROUTER =====
 const routes = {
   client: { "/": clientOverview, "/orders": clientOrders, "/quotes": clientQuotes, "/products": clientProducts, "/balance": clientBalance, "/connect": clientConnect, "/account": clientAccount },
   agent: { "/agent": () => agentOrders(false), "/agent/shipped": () => agentOrders(true) },
-  admin: { "/admin/leads": adminLeads, "/admin/insights": adminInsights, "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/messages": adminMessages, "/admin/clients": adminClients },
+  partner: { "/partner": partnerHome },
+  admin: { "/admin/leads": adminLeads, "/admin/insights": adminInsights, "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/messages": adminMessages, "/admin/clients": adminClients, "/admin/claims": adminClaims, "/admin/invoices": adminInvoices, "/admin/partners": adminPartners },
 };
 async function route() {
   const [h, q] = location.hash.replace(/^#/, "").split("?");
@@ -1463,7 +1704,7 @@ async function route() {
     if (scroll) return CONFIG.SITE_URL ? (location.href = CONFIG.SITE_URL) : landingPage(scroll);
     location.hash = ""; return;
   }
-  const home = { admin: "/admin", agent: "/agent" }[ME.role] || "/";
+  const home = { admin: "/admin", agent: "/agent", partner: "/partner" }[ME.role] || "/";
   const path = location.hash.replace(/^#/, "") || home;
   const table = routes[ME.role] || routes.client;
   const fn = table[path] || table[home];

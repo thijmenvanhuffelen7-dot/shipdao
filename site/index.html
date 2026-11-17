@@ -102,6 +102,25 @@
   <div class="acc-list" data-r><details open><summary>Which countries do you ship to?<i></i></summary><p>We ship worldwide. Tell us where your customers are and your quote shows the route and delivery time per country.</p></details><details><summary>Do I need to buy stock?<i></i></summary><p>No. We buy per order, so you can start with zero stock. When a product sells steadily, bulk stock can lower your cost.</p></details><details><summary>How fast do orders ship and arrive?<i></i></summary><p>It depends on the product and the route. Your quote shows the expected processing and delivery time per country, and tracking is synced to your Shopify store.</p></details><details><summary>What if a parcel is lost or damaged?<i></i></summary><p>No delivery scan 30 days after shipping? Tell us and we reship it or credit the order price to your balance. Damaged or wrong item: send photos within 14 days of delivery.</p></details><details><summary>I use AliExpress or CJ now. How do I switch?<i></i></summary><p>Send your product links and we quote an all-in price. If we beat what you pay now on price or speed, we connect your Shopify and new orders run through us.</p></details><details><summary>How does paying work?<i></i></summary><p>You top up a balance and every order is paid from it. No contract and no subscription, so you can stop whenever you want.</p></details><details><summary>How do VAT, duties and customs work?<i></i></summary><p>Duties and VAT are prepaid wherever possible, so your customer never pays at the door.</p></details><details><summary>What happens around Chinese New Year?<i></i></summary><p>Factories close for about two weeks around Chinese New Year. We warn you weeks ahead, so you can stock up on bestsellers before the break.</p></details></div>
 </div></section>
 
+<section class="cs calc-s" id="calculator" style="padding-top:0"><div class="hw">
+  <div class="split" data-r><div><p class="mono acc">Margin check · 利润</p><h2>What does your product<br><em class="it">really</em> leave you?</h2></div><p class="note">Fill in your numbers. Nothing is sent until you ask for your price check.</p></div>
+  <div class="calc" data-r>
+    <form class="cin" id="calc" onsubmit="return false">
+      <label>Your selling price (€)<input name="sell" type="number" min="0" step="0.01" value="34.95" inputmode="decimal"></label>
+      <label>What you pay now per order, product + shipping (€)<input name="cost" type="number" min="0" step="0.01" value="17.50" inputmode="decimal"></label>
+      <label>Orders per day<input name="opd" type="number" min="0" step="1" value="20" inputmode="numeric"></label>
+      <label>Orders refunded (late, broken, lost) (%)<input name="ref" type="number" min="0" max="100" step="0.5" value="6" inputmode="decimal"></label>
+    </form>
+    <div class="cout">
+      <div><p class="mono">You keep per order</p><p class="pn" id="c-per">–</p></div>
+      <div><p class="mono">Per month</p><p class="pn" id="c-month">–</p></div>
+      <div><p class="mono">Lost to refunds per month</p><p class="pn acc" id="c-lost">–</p></div>
+      <p class="cnote">Before ad spend and payment fees. Slow shipping and no quality check usually show up as refunds and chargebacks. That last number is what a better supply chain can win back.</p>
+      <a class="btn arrow" href="#contact" id="c-go">See your price with Shipdao<b>→</b></a>
+    </div>
+  </div>
+</div></section>
+
 <section class="cs end" id="contact"><div class="hw">
   <p class="mono acc c" data-r>Free · quote within 24 hours</p>
   <h2 class="c huge" data-r>Let's ship it<span class="acc">.</span></h2>
