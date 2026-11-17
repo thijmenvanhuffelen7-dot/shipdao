@@ -91,6 +91,10 @@ dialog::backdrop{background:rgba(30,21,18,.35)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{background:transparent;color:var(--ink2);border-color:var(--line)}
 .chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.legal{max-width:760px;margin:0 auto;padding:40px 20px 80px}.legal h1{margin:18px 0 6px}.legal h2{font-size:19px;margin:26px 0 8px}.legal p,.legal li{color:var(--ink2)}.legal ol,.legal ul{padding-left:20px}
+.foot{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.7}.foot a{color:var(--muted)}
+.amounts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);margin:4px 0 12px}.check input{width:auto;margin-top:3px}
 .notice{background:var(--amber-soft);color:var(--amber);border-radius:10px;padding:12px 14px;font-size:14px}
 </style>
 </head>
@@ -105,11 +109,27 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 const CONFIG = {
   SUPABASE_URL: "https://yjkbjljnnikfqvzvzulg.supabase.co",
   SUPABASE_KEY: "sb_publishable_EKV3-GpgUanXNrW8YdZ7Hg_U54bXJHT",
-  TOPUP_INSTRUCTIONS: "Transfer the amount to [IBAN] in the name of [company], with your store name as reference. Or pay with this link: [payment link]. Your balance is updated as soon as we receive it.",
+  // Your business details. Required by Dutch law on your site, and Mollie checks them before you can take real payments.
+  COMPANY: {
+    TRADE_NAME: "Shipdao",
+    LEGAL_NAME: "[legal name, e.g. Shipdao / your full name as registered at KvK]",
+    KVK: "[KvK number]",
+    VAT: "[VAT number, e.g. NL000000000B01]",
+    ADDRESS: "[street + number, postcode, city, Netherlands]",
+    EMAIL: "[support email]",
+    COURT: "[city of your district court, e.g. Amsterdam]",
+  },
+  ONLINE_TOPUP: true, // iDEAL / Bancontact / card via Mollie (needs MOLLIE_API_KEY secret in Supabase)
+  TOPUP_PRESETS: [50, 100, 250, 500],
+  // Bank transfer as a fallback. Leave the [brackets] in and it stays hidden.
+  TOPUP_INSTRUCTIONS: "Transfer the amount to [IBAN] in the name of [company], with your store name as reference. Your balance is updated as soon as we receive it.",
   WHATSAPP: "", // e.g. "31612345678"
 };
 // =====================================================
 
+const C = CONFIG.COMPANY;
+const isPlaceholder = (v) => !v || /\[.*\]/.test(String(v));
+const missingCompany = () => Object.entries(C).filter(([, v]) => isPlaceholder(v)).map(([k]) => k);
 const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 const $root = document.getElementById("root");
 const dlg = document.getElementById("dlg");
@@ -162,6 +182,52 @@ function ask({ title, body, fields, ok = "Save" }) {
   });
 }
 
+// ===== LEGAL =====
+const footer = () => `<div class="foot">${esc(C.TRADE_NAME)}${isPlaceholder(C.LEGAL_NAME) ? "" : " · " + esc(C.LEGAL_NAME)}${isPlaceholder(C.KVK) ? "" : " · KvK " + esc(C.KVK)}${isPlaceholder(C.VAT) ? "" : " · VAT " + esc(C.VAT)}<br>
+  ${isPlaceholder(C.ADDRESS) ? "" : esc(C.ADDRESS) + "<br>"}${isPlaceholder(C.EMAIL) ? "" : `<a href="mailto:${esc(C.EMAIL)}">${esc(C.EMAIL)}</a> · `}<a href="#/terms">Terms</a> · <a href="#/privacy">Privacy</a> · <a href="#/dpa">Data processing</a></div>`;
+const LEGAL = {
+  "/terms": () => `<h1>Terms and conditions</h1><p class="muted small">Version 1 · ${esc(C.TRADE_NAME)}</p>
+    <h2>1. Who we are</h2><p>${esc(C.TRADE_NAME)} (${esc(C.LEGAL_NAME)}), registered with the Dutch Chamber of Commerce (KvK) under number ${esc(C.KVK)}, VAT ${esc(C.VAT)}, ${esc(C.ADDRESS)}. Contact: ${esc(C.EMAIL)}.</p>
+    <h2>2. What we do</h2><p>We source products, buy them from suppliers, check and pack them, and ship them to the customers of your online store ("fulfilment"). These terms apply to every account, quote and order. We only work with businesses, not with consumers.</p>
+    <h2>3. Prices and quotes</h2><ol><li>We agree an all-in price per product (and where relevant per destination country). It includes the product, handling and shipping, and duties/VAT only where stated.</li>
+      <li>A quote is valid for 30 days. We may change prices for new orders with 7 days' notice, for example when supplier or shipping costs change. Orders already paid keep their price.</li></ol>
+    <h2>4. Balance and payment</h2><ol><li>You work with a prepaid balance. Every order is charged from your balance at the agreed price as soon as it comes in.</li>
+      <li>If your balance is too low, the order waits until you top up. We are not responsible for delays caused by a low balance or by a product without an agreed price.</li>
+      <li>You can top up online (iDEAL, Bancontact, card via our payment provider Mollie) or by bank transfer.</li>
+      <li>Unused balance is refunded on request within 14 days, minus any payment costs that cannot be recovered. A chargeback on a top-up is deducted from your balance.</li></ol>
+    <h2>5. Delivery</h2><ol><li>Delivery times are estimates, not deadlines.</li>
+      <li>If a parcel is lost (no delivery scan 30 days after shipping), we reship it or credit the order price to your balance, at our choice. Damaged or wrong items must be reported within 14 days of delivery with photos.</li>
+      <li>A wrong or incomplete address that you or your customer gave is your responsibility; reshipping is charged again.</li></ol>
+    <h2>6. Your responsibilities</h2><p>You make sure the products you sell may be sold and imported legally in the destination country, do not infringe trademarks or other rights (no counterfeits), and that your product descriptions are correct. You handle your own customers, returns and consumer rights. You indemnify us against claims resulting from your products or your store.</p>
+    <h2>7. Liability</h2><p>Our liability is limited to the price of the order concerned, and in total to the amount you paid us in the 3 months before the event. We are not liable for indirect damage such as lost profit, lost sales or damage to your reputation, except in case of intent or gross negligence.</p>
+    <h2>8. Ending</h2><p>Either party may stop at any time. Paid orders are still shipped; remaining balance is refunded as in article 4.</p>
+    <h2>9. Law</h2><p>Dutch law applies. Disputes go to the competent court in ${esc(C.COURT)}.</p>`,
+  "/privacy": () => `<h1>Privacy statement</h1><p class="muted small">${esc(C.TRADE_NAME)}</p>
+    <h2>Who is responsible</h2><p>${esc(C.LEGAL_NAME)} (${esc(C.TRADE_NAME)}), KvK ${esc(C.KVK)}, ${esc(C.ADDRESS)}, ${esc(C.EMAIL)}.</p>
+    <h2>Which data and why</h2><ul><li><b>Your account</b>: name, email, store name and URL, WhatsApp number. To give you access, send quotes and contact you (contract).</li>
+      <li><b>Payments</b>: top-ups and charges on your balance. Required for our bookkeeping (legal obligation, kept 7 years).</li>
+      <li><b>Your customers' order data</b>: name, shipping address, phone and the items ordered. We process these <i>on your behalf</i> to ship the order; see the <a href="#/dpa">data processing agreement</a>.</li></ul>
+    <h2>Who we share it with</h2><ul><li>Supabase (hosting and database), Mollie (payments), Shopify (your store connection).</li>
+      <li>Our purchasing and warehouse partner in China and the carriers that deliver the parcels. Only the data needed to ship. Transfers outside the EU are covered by the European Commission's standard contractual clauses.</li></ul>
+    <p>We never sell data and do not use it for advertising.</p>
+    <h2>How long</h2><p>Account data as long as you have an account. Shipping addresses are deleted or anonymised at the latest 12 months after delivery, or earlier when your store asks for it. Financial records are kept for 7 years because the law requires it.</p>
+    <h2>Cookies</h2><p>We only store what is needed to keep you logged in. No tracking or advertising cookies.</p>
+    <h2>Your rights</h2><p>You can ask to see, correct or delete your data, or object, by emailing ${esc(C.EMAIL)}. You may also complain to the Dutch Data Protection Authority (Autoriteit Persoonsgegevens).</p>`,
+  "/dpa": () => `<h1>Data processing agreement</h1><p class="muted small">Between you (the store, "controller") and ${esc(C.TRADE_NAME)} ("processor"). Accepted when you create an account.</p>
+    <ol><li><b>Subject.</b> We process the personal data of your customers (name, address, phone, ordered items) only to buy, pack and ship their orders and to send tracking back to your store, and only on your instructions.</li>
+      <li><b>Confidentiality.</b> Everyone who handles the data on our side is bound to confidentiality.</li>
+      <li><b>Security.</b> Data is stored with access control and encrypted connections. Only you and we can see your orders.</li>
+      <li><b>Sub-processors.</b> Supabase (hosting), Shopify, our purchasing/warehouse partner in China and the carriers. Transfers outside the EU use standard contractual clauses. We tell you before adding a new sub-processor; you may object.</li>
+      <li><b>Data breaches.</b> We inform you without undue delay, and within 48 hours of discovering a breach that affects your data.</li>
+      <li><b>Help.</b> We help you answer requests from your customers (access, deletion). Deletion requests sent through Shopify are processed automatically.</li>
+      <li><b>End.</b> When you stop, we delete or anonymise your customers' data within 3 months, except what we must keep by law.</li></ol>`,
+};
+function renderLegal(path) {
+  $root.innerHTML = `<div class="legal"><a href="#" id="legalBack" class="small">← Back</a>${LEGAL[path]()}${footer()}</div>`;
+  document.getElementById("legalBack").onclick = (e) => { e.preventDefault(); history.length > 1 ? history.back() : (location.hash = ""); };
+  window.scrollTo(0, 0);
+}
+
 // ===== AUTH =====
 function renderAuth(mode = "login") {
   $root.innerHTML = `<div class="auth"><div class="card">
@@ -176,10 +242,11 @@ function renderAuth(mode = "login") {
         <div class="field"><label>Store URL</label><input name="store_url" placeholder="https://"></div>` : ""}
       <div class="field"><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       ${mode !== "reset" ? `<div class="field"><label>Password</label><input name="password" type="password" minlength="8" required autocomplete="${mode === "signup" ? "new-password" : "current-password"}"></div>` : ""}
+      ${mode === "signup" ? `<label class="check"><input type="checkbox" name="terms" required><span>I agree to the <a href="#/terms" target="_blank">terms</a> and the <a href="#/dpa" target="_blank">data processing agreement</a>, and I have read the <a href="#/privacy" target="_blank">privacy statement</a>.</span></label>` : ""}
       <button style="width:100%;margin-top:6px">${mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Log in"}</button>
     </form>
     <p class="small" style="text-align:center;margin:16px 0 0">${mode === "reset" ? `<a href="#" data-m="login">Back to log in</a>` : `<a href="#" data-m="reset">Forgot password?</a>`}</p>
-  </div></div>`;
+  ${footer()}</div></div>`;
   $root.querySelectorAll("[data-m]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); renderAuth(b.dataset.m); }));
   $root.querySelector("#authForm").onsubmit = async (e) => {
     e.preventDefault(); const f = Object.fromEntries(new FormData(e.target).entries());
@@ -187,7 +254,7 @@ function renderAuth(mode = "login") {
     try {
       if (mode === "signup") {
         const { data, error } = await sb.auth.signUp({ email: f.email, password: f.password,
-          options: { data: { company: f.company, full_name: f.full_name, store_url: f.store_url }, emailRedirectTo: location.origin + location.pathname } });
+          options: { data: { company: f.company, full_name: f.full_name, store_url: f.store_url, terms_accepted_at: new Date().toISOString(), terms_version: 1 }, emailRedirectTo: location.origin + location.pathname } });
         if (error) throw error;
         if (!data.session) { toast("Check your email to confirm your account."); renderAuth("login"); }
       } else if (mode === "reset") {
@@ -212,13 +279,44 @@ function shell(active, content, counts = {}) {
         ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/clients", "Clients")}` : `
         ${link("/", "Overview")}${link("/quotes", "Quotes")}${link("/orders", "Orders")}${link("/products", "Products")}${link("/connect", "Connect store")}${link("/account", "Account")}`}
       </nav>
-      <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">Log out</a></div>
+      <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">Log out</a><div style="margin-top:8px;font-size:11px"><a href="#/terms" style="color:var(--muted)">Terms</a> · <a href="#/privacy" style="color:var(--muted)">Privacy</a></div></div>
     </aside><main class="main" id="main">${content}</main></div>`;
   document.getElementById("logout").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); };
 }
 const loading = (active) => shell(active, `<div class="empty">Loading…</div>`);
 
 // ===== CLIENT VIEWS =====
+function topupBlock() {
+  const bank = !isPlaceholder(CONFIG.TOPUP_INSTRUCTIONS) ? `<p class="muted small" style="margin-top:12px">${CONFIG.ONLINE_TOPUP ? "Or by bank transfer: " : ""}${esc(CONFIG.TOPUP_INSTRUCTIONS)}</p>` : "";
+  if (!CONFIG.ONLINE_TOPUP) return bank || `<p class="muted small">Contact us to top up.</p>`;
+  return `<p class="muted small" style="margin:4px 0 0">Pay with iDEAL, Bancontact or card. Your balance updates within seconds and waiting orders go out right away.</p>
+    <div class="amounts">${CONFIG.TOPUP_PRESETS.map((a, i) => `<button type="button" class="sm ${i === 1 ? "" : "ghost"}" data-amt="${a}">${eur(a)}</button>`).join("")}</div>
+    <form id="topForm" class="row"><input name="amount" type="number" min="10" max="5000" step="1" value="${CONFIG.TOPUP_PRESETS[1]}" style="width:120px" required><button class="red">Pay with iDEAL</button></form>${bank}`;
+}
+function bindTopup() {
+  const f = document.getElementById("topForm"); if (!f) return;
+  document.querySelectorAll("[data-amt]").forEach((b) => (b.onclick = () => {
+    f.amount.value = b.dataset.amt; document.querySelectorAll("[data-amt]").forEach((x) => x.classList.toggle("ghost", x !== b));
+  }));
+  f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
+    const amount = Number(f.amount.value);
+    if (!(amount >= 10 && amount <= 5000)) return toast("Choose an amount between €10 and €5,000", true);
+    const { data, error } = await sb.functions.invoke("mollie-topup", { body: { amount } });
+    if (error || !data?.checkout_url) { let m = error?.message || "Could not start the payment"; try { m = (await error.context.json()).error || m; } catch {} return toast(m, true); }
+    location.href = data.checkout_url;
+  }); };
+}
+async function afterTopup(id) {
+  toast("Checking your payment…");
+  for (let i = 0; i < 8; i++) {
+    if (i === 0 || i === 3) await sb.functions.invoke("mollie-topup", { body: { check: id } }).catch(() => null);
+    const { data } = await sb.rpc("my_payment", { p_payment: id });
+    if (data?.credited || data?.status === "paid") return toast(`${eur(data.amount)} added. Your balance is now ${eur(data.balance)}.`), route();
+    if (["canceled", "expired", "failed"].includes(data?.status)) return toast(data.status === "canceled" ? "Payment cancelled. Nothing was charged." : "The payment did not go through. Nothing was charged.", true);
+    await new Promise((ok) => setTimeout(ok, 2000));
+  }
+  toast("Your payment is still being processed. Your balance updates automatically once it is confirmed.");
+}
 async function clientOverview() {
   loading("/");
   const d = await rpc("client_dashboard");
@@ -226,14 +324,14 @@ async function clientOverview() {
   const inTransit = d.orders.filter((o) => ["paid", "sent_to_agent", "shipped"].includes(o.status)).length;
   shell("/", `
     <div class="head"><div><h1>Hi ${esc(ME.full_name?.split(" ")[0] || "there")}</h1><p class="muted" style="margin:4px 0 0">Here is where your orders stand.</p></div></div>
-    ${waiting ? `<div class="notice" style="margin-bottom:16px">${waiting} order${waiting > 1 ? "s are" : " is"} waiting. ${d.orders.some((o) => o.status === "on_hold") ? "Top up your balance and they go out automatically." : "We are looking at it."}</div>` : ""}
+    ${waiting ? `<div class="notice" style="margin-bottom:16px">${waiting} order${waiting > 1 ? "s are" : " is"} waiting. ${d.orders.some((o) => o.status === "on_hold") ? "Top up your balance below and they go out automatically." : "We are looking at it."}</div>` : ""}
     <div class="grid g3">
       <div class="card stat"><div class="k">Balance</div><div class="v">${eur(d.balance)}</div></div>
       <div class="card stat"><div class="k">On the way</div><div class="v">${inTransit}</div></div>
       <div class="card stat"><div class="k">Waiting</div><div class="v">${waiting}</div></div>
     </div>
     <div class="grid g2" style="margin-top:16px">
-      <div class="card"><h3>Top up your balance</h3><p class="muted small">${esc(CONFIG.TOPUP_INSTRUCTIONS)}</p>
+      <div class="card"><h3>Top up your balance</h3>${topupBlock()}
         ${CONFIG.WHATSAPP ? `<a class="btn" style="display:inline-block;text-decoration:none" target="_blank" href="https://wa.me/${esc(CONFIG.WHATSAPP)}?text=${encodeURIComponent("Hi Shipdao, I just topped up my balance for " + (ME.client?.name || ""))}">Tell us on WhatsApp</a>` : ""}</div>
       <div class="card"><h3>Your prices</h3>${d.products.some((p) => p.active) ? `<table class="tbl" style="margin-top:8px"><tr><th>Product</th><th>Country</th><th class="num">All-in</th></tr>
         ${d.products.filter((p) => p.active).slice(0, 8).map((p) => `<tr><td>${esc(p.name)}${p.variant_title ? ` <span class="muted">(${esc(p.variant_title)})</span>` : ""}</td><td>${esc(p.country || "All")}</td><td class="num">${eur(p.price_all_in)}</td></tr>`).join("")}</table>`
@@ -242,6 +340,7 @@ async function clientOverview() {
     </div>
     <div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3>Latest orders</h3><a href="#/orders" class="small">All orders</a></div>
       ${ordersTable(d.orders.slice(0, 6))}</div>`);
+  bindTopup();
 }
 function ordersTable(orders) {
   if (!orders.length) return `<div class="empty">No orders yet. Once your store is connected, new orders appear here.</div>`;
@@ -394,7 +493,9 @@ async function adminOverview() {
     [t.sourcing, "product(s) being sourced, waiting for supplier prices", "/admin/products", "sourcing"],
   ].filter((x) => x[0] > 0);
   const lowBal = cs.filter((c) => c.on_hold_value > 0 || (c.status === "active" && c.balance < 50));
-  shell("/admin", `<div class="head"><div><h1>Overview</h1><p class="muted" style="margin:4px 0 0">Everything across all clients, ${date(new Date())}.</p></div>
+  const miss = missingCompany();
+  shell("/admin", `${miss.length ? `<div class="notice" style="margin-bottom:16px"><b>Not ready to go live.</b> Fill in your business details in CONFIG.COMPANY at the top of index.html: ${miss.map((k) => k.toLowerCase().replace("_", " ")).join(", ")}. Without them your terms say "[KvK number]" and Mollie will not approve you. 🙃</div>` : ""}
+    <div class="head"><div><h1>Overview</h1><p class="muted" style="margin:4px 0 0">Everything across all clients, ${date(new Date())}.</p></div>
       <button class="ghost" id="refresh">Refresh</button></div>
     <div class="grid g4">
       <div class="card stat"><div class="k">Profit (30d)</div><div class="v">${eur(t.profit_30d)}</div><div class="muted small">on ${eur(t.revenue_30d)} charged</div></div>
@@ -732,7 +833,9 @@ const routes = {
   admin: { "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/clients": adminClients },
 };
 async function route() {
-  if (!ME) return;
+  const h = location.hash.replace(/^#/, "");
+  if (LEGAL[h]) return renderLegal(h);
+  if (!ME) return renderAuth();
   const path = location.hash.replace(/^#/, "") || (ME.role === "admin" ? "/admin" : "/");
   const table = routes[ME.role === "admin" ? "admin" : "client"];
   const fn = table[path] || table[ME.role === "admin" ? "/admin" : "/"];
@@ -745,12 +848,14 @@ async function route() {
 window.addEventListener("hashchange", route);
 
 async function boot(session) {
-  if (!session) { ME = null; CURRENT_UID = null; return renderAuth(); }
+  if (LEGAL[location.hash.replace(/^#/, "")]) renderLegal(location.hash.replace(/^#/, ""));
+  if (!session) { ME = null; CURRENT_UID = null; return LEGAL[location.hash.replace(/^#/, "")] ? null : renderAuth(); }
   if (ME && CURRENT_UID === session.user.id) return; // same user, keep the current page
   CURRENT_UID = session.user.id;
   ME = await rpc("whoami").catch(() => null);
   if (!ME) { CURRENT_UID = null; $root.innerHTML = `<div class="auth"><div class="card"><h2>Account not ready</h2><p class="muted">Try again in a minute, or contact us.</p><button id="lo">Log out</button></div></div>`; document.getElementById("lo").onclick = () => sb.auth.signOut(); return; }
   const qs = new URLSearchParams(location.search);
+  if (qs.get("topup")) { const id = qs.get("topup"); history.replaceState(null, "", location.pathname + "#/"); route(); return afterTopup(id); }
   if (qs.get("shopify")) {
     if (qs.get("shopify") === "connected") {
       toast("Your Shopify store is connected." + (qs.get("imported") ? ` ${qs.get("imported")} products imported.` : ""));
