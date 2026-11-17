@@ -121,6 +121,14 @@ dialog::backdrop{background:rgba(30,21,18,.35)}
 .docs .num{color:var(--red);font-family:var(--serif);margin-right:8px}
 .kv{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;font-size:14px;margin:10px 0}.kv dt{font-weight:500}.kv dd{margin:0;color:var(--ink2)}
 @media(max-width:820px){.docs{grid-template-columns:1fr}.docs nav{position:static}.kv{grid-template-columns:1fr}}
+.p-unpaid{background:var(--rice);color:var(--muted)} .p-address_error{background:var(--red-soft);color:var(--red)} .p-reported{background:var(--amber-soft);color:var(--amber)} .p-rejected{background:var(--red-soft);color:var(--red)}
+dialog.wide{max-width:760px}
+.thread{max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--rice);border-radius:10px;margin:8px 0}
+.msg{max-width:80%;padding:8px 12px;border-radius:12px;font-size:14px;background:#fff;border:1px solid var(--line);white-space:pre-wrap}
+.msg.mine{align-self:flex-end;background:var(--ink);color:#fff;border-color:var(--ink)}.msg .t{font-size:11px;opacity:.6;margin-top:3px}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--rice)}
+.dot{display:inline-block;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center;margin-left:4px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.filters input{width:auto}
 .legal{max-width:760px;margin:0 auto;padding:40px 20px 80px}.legal h1{margin:18px 0 6px}.legal h2{font-size:19px;margin:26px 0 8px}.legal p,.legal li{color:var(--ink2)}.legal ol,.legal ul{padding-left:20px}
 .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.7}.foot a{color:var(--muted)}
 .amounts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
@@ -379,13 +387,18 @@ const DOCS = () => [
   ["balance", "Balance and top-ups", `<p>You work with a prepaid balance. Your current balance is on the overview; every top-up and charge is under <b>Orders → Balance history</b>.</p>
     <h3>Topping up</h3><ul><li><b>Online</b>: pick an amount (€10 to €5,000) and pay with iDEAL, Bancontact or card. Your balance updates within seconds.</li><li><b>Bank transfer</b>: when shown on your overview. Slower: it is added once we receive it.</li></ul>
     <h3>How much?</h3><p>Look at what you spend in a normal week and stay a week ahead. Orders that hit an empty balance wait until you top up, and that costs you delivery time.</p>
+    <h3>Paid by bank transfer?</h3><p>Under <b>Balance</b>, use <b>I paid this</b> with the amount and the name on your account. We add it once it arrives; you see its status there.</p>
+    <h3>Your statement</h3><p><b>Balance</b> lists every top-up, charge and refund with your balance after each one. Pick a month and <b>Export (CSV)</b>: that file is what your bookkeeper wants.</p>
     <h3>Getting it back</h3><p>Unused balance is refunded on request within ${G.REFUND_DAYS} days.</p>`],
-  ["orders", "Orders and what each status means", `<dl class="kv"><dt>new</dt><dd>Just came in, being charged.</dd><dt>paid</dt><dd>Charged from your balance, waiting to be packed.</dd><dt>sent to agent</dt><dd>With our warehouse, being packed.</dd><dt>shipped</dt><dd>On its way. Tracking is in the order and in Shopify.</dd>
-      <dt>on hold</dt><dd>Your balance was too low. Top up and it goes out automatically.</dd><dt>issue</dt><dd>A product in it has no agreed price yet. The note says which one.</dd><dt>cancelled</dt><dd>Cancelled; the price went back to your balance.</dd></dl>
+  ["messages", "Messages", `<p>Every order and every product has its own chat with us. When we need your OK on a size, a colour or a replacement, we ask it there, with the product next to it. A red dot in the menu means something is waiting for you.</p>`],
+  ["orders", "Orders and what each status means", `<dl class="kv"><dt>unpaid</dt><dd>Your customer has not paid in Shopify yet (bank transfer, pay later). Nothing is charged; it goes out as soon as Shopify marks it paid.</dd><dt>new</dt><dd>Just came in, being charged.</dd><dt>paid</dt><dd>Charged from your balance, waiting to be packed.</dd><dt>sent to agent</dt><dd>With our warehouse, being packed.</dd><dt>shipped</dt><dd>On its way. Tracking is in the order and in Shopify.</dd>
+      <dt>on hold</dt><dd>Your balance was too low. Top up and it goes out automatically.</dd><dt>issue</dt><dd>A product in it has no agreed price yet. The note says which one.</dd><dt>address error</dt><dd>We cannot deliver to this address. Open the order, correct it, and it goes back in the queue.</dd><dt>cancelled</dt><dd>Cancelled in Shopify or by us; what you paid went back to your balance.</dd></dl>
+    <h3>Inside an order</h3><p>Click any order to see the delivery address, what your customer paid, our price and what you keep, plus the tracking and a chat with us about that order.</p>
+    <h3>Filters and export</h3><p>Use the chips (waiting on you, address problem, processing &gt; 5 days…), search and the date range, then <b>Export (CSV)</b> for a spreadsheet of exactly that list.</p>
     <h3>“My order isn't here”</h3><p>Usually it is not paid in Shopify yet, it was placed before you connected your store, or it has no shippable items. Still missing? Send us the Shopify order number.</p>`],
   ["tracking", "Tracking and “where is my order?”", `<p>When an order ships, the tracking number appears in your portal and in Shopify, and Shopify emails your customer. A customer asking where their order is? Search the order number under <b>Orders</b> and send them the tracking link.</p>
     <p>${has(G.DELIVERY_EU) ? `Typical delivery in the EU: ${esc(G.DELIVERY_EU)}. ` : ""}No delivery scan after ${G.LOST_PARCEL_DAYS} days? Tell us, and we reship or credit the order. Damaged or wrong item: send photos within 14 days.</p>`],
-  ["routine", "Your routine", `<h3>Every day, two minutes</h3><ul><li>Overview: anything waiting?</li><li>Balance enough for the next few days?</li></ul><h3>Every week</h3><ul><li>Products: anything new waiting for a price?</li><li>Balance history: does the spend match your sales?</li></ul>`],
+  ["routine", "Your routine", `<h3>Every day, two minutes</h3><ul><li>Overview: anything waiting? Address problems first, they never fix themselves.</li><li>Red dots: unread messages from us.</li><li>Balance enough for the next few days?</li></ul><h3>Every week</h3><ul><li>Products: anything new waiting for a price?</li><li>Balance history: does the spend match your sales?</li></ul>`],
   ["help", "Help", `<p>Questions, a stuck order or a product you want priced quickly: ${contactLinks() ? contactLinks().replace(/<a /g, '<a style="margin-right:10px" ') : "message us from your portal"}.</p><p>Legal: <a href="#/terms">terms</a>, <a href="#/privacy">privacy</a>, <a href="#/dpa">data processing</a>.</p>`],
 ];
 function docsPage() {
@@ -448,14 +461,55 @@ function shell(active, content, counts = {}) {
       <div class="brand"><div class="seal">道</div>shipdao</div>
       <nav class="nav">${admin ? `
         <div class="sec">Admin</div>
-        ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/clients", "Clients")}` : `
-        ${link("/", "Overview")}${link("/quotes", "Quotes")}${link("/orders", "Orders")}${link("/products", "Products")}${link("/connect", "Connect store")}${link("/account", "Account")}`}
+        ${link("/admin", "Overview")}${link("/admin/quotes", "Quotes", counts.quotes)}${link("/admin/orders", "Orders", counts.orders)}${link("/admin/products", "Products", counts.products)}${link("/admin/messages", "Messages", counts.messages)}${link("/admin/clients", "Clients")}` : `
+        ${link("/", "Overview")}${link("/orders", "Orders", counts.orders)}${link("/products", "Products", counts.products)}${link("/balance", "Balance")}${link("/quotes", "Quotes")}${link("/connect", "Connect store")}${link("/account", "Account")}`}
       </nav>
       <div class="who">${esc(ME.client?.name || ME.full_name || ME.email)}<br><a href="#" id="logout">Log out</a><div style="margin-top:8px;font-size:11px"><a href="#/docs" style="color:var(--muted)">Help</a> · <a href="#/terms" style="color:var(--muted)">Terms</a> · <a href="#/privacy" style="color:var(--muted)">Privacy</a></div></div>
     </aside><main class="main" id="main">${content}</main></div>`;
   document.getElementById("logout").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); };
 }
 const loading = (active) => shell(active, `<div class="empty">Loading…</div>`);
+
+// ===== SHARED: messages, csv =====
+const ago = (d) => new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+function downloadCsv(name, header, rows) {
+  const cell = (v) => { let x = String(v ?? ""); if (/^[=+\-@\t\r]/.test(x)) x = "'" + x; return `"${x.replace(/"/g, '""')}"`; };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + [header, ...rows].map((r) => r.map(cell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const clientCounts = (d) => ({
+  orders: d.orders.filter((o) => ["address_error", "on_hold", "issue"].includes(o.status)).length + d.orders.reduce((a, o) => a + Number(o.unread || 0), 0),
+  products: d.products.reduce((a, p) => a + Number(p.unread || 0), 0),
+});
+// one conversation about an order or a product, between the store and Shipdao
+async function openThread({ orderId = null, productId = null, clientId, title, extra = "", onClose }) {
+  const admin = ME.role === "admin";
+  const load = async () => {
+    let q = sb.from("messages").select("*").order("created_at");
+    q = orderId ? q.eq("order_id", orderId) : q.eq("product_id", productId);
+    const { data } = await q; return data || [];
+  };
+  const render = (ms) => `<div class="thread" id="thr">${ms.length ? ms.map((m) => `<div class="msg ${m.from_admin === admin ? "mine" : ""}">${esc(m.body)}<div class="t">${m.from_admin ? "Shipdao" : "Store"} · ${ago(m.created_at)}</div></div>`).join("") : `<div class="muted small" style="text-align:center;padding:16px">No messages yet.</div>`}</div>`;
+  dlg.className = "wide";
+  dlg.innerHTML = `<div class="row" style="justify-content:space-between"><h2>${esc(title)}</h2><button class="ghost sm" id="thrClose">Close</button></div>${extra}
+    <div id="thrBox">${render(await load())}</div>
+    <form id="thrForm" class="row" style="align-items:flex-end"><textarea name="body" rows="2" maxlength="4000" placeholder="Write a message…" style="flex:1" required></textarea><button>Send</button></form>`;
+  const scroll = () => { const t = document.getElementById("thr"); if (t) t.scrollTop = t.scrollHeight; };
+  dlg.onclose = () => { dlg.className = ""; onClose && onClose(); };
+  document.getElementById("thrClose").onclick = () => dlg.close();
+  document.getElementById("thrForm").onsubmit = (e) => { e.preventDefault(); const f = e.target; busy(submitBtn(f), async () => {
+    const row = { client_id: clientId, order_id: orderId, product_id: productId, body: f.body.value.trim(), from_admin: admin };
+    if (!row.body) return;
+    const { error } = await sb.from("messages").insert(row);
+    if (error) return toast(error.message, true);
+    f.reset(); document.getElementById("thrBox").innerHTML = render(await load()); scroll();
+  }); };
+  dlg.showModal(); scroll();
+  sb.rpc("mark_messages_read", { p_order: orderId, p_product: productId }).then(() => {});
+  return dlg;
+}
+const addrText = (a) => esc([a?.name || [a?.first_name, a?.last_name].filter(Boolean).join(" "), a?.address1, a?.address2, [a?.zip, a?.city].filter(Boolean).join(" "), a?.province, a?.country_code || a?.country, a?.phone].filter(Boolean).join("\n")).replace(/\n/g, "<br>");
 
 // ===== CLIENT VIEWS =====
 function topupBlock() {
@@ -492,11 +546,15 @@ async function afterTopup(id) {
 async function clientOverview() {
   loading("/");
   const d = await rpc("client_dashboard");
-  const waiting = d.orders.filter((o) => ["on_hold", "issue"].includes(o.status)).length;
+  const waiting = d.orders.filter((o) => ["on_hold", "issue", "address_error"].includes(o.status)).length;
+  const addrErr = d.orders.filter((o) => o.status === "address_error").length;
+  const waitingOther = waiting - addrErr;
   const inTransit = d.orders.filter((o) => ["paid", "sent_to_agent", "shipped"].includes(o.status)).length;
   shell("/", `
     <div class="head"><div><h1>Hi ${esc(ME.full_name?.split(" ")[0] || "there")}</h1><p class="muted" style="margin:4px 0 0">Here is where your orders stand.</p></div></div>
-    ${waiting ? `<div class="notice" style="margin-bottom:16px">${waiting} order${waiting > 1 ? "s are" : " is"} waiting. ${d.orders.some((o) => o.status === "on_hold") ? "Top up your balance below and they go out automatically." : "We are looking at it."}</div>` : ""}
+    ${addrErr ? `<div class="notice" style="margin-bottom:16px;background:var(--red-soft);color:var(--red)"><b>${addrErr} order${addrErr > 1 ? "s have" : " has"} an address problem.</b> They do not ship until you fix it. <a href="#/orders" data-of="address_error">Fix now →</a></div>` : ""}
+    ${d.unread ? `<div class="notice" style="margin-bottom:16px;background:var(--blue-soft);color:var(--blue)">You have ${d.unread} unread message${d.unread > 1 ? "s" : ""} from us. Look for the red dot in Orders and Products.</div>` : ""}
+    ${waitingOther ? `<div class="notice" style="margin-bottom:16px">${waitingOther} order${waitingOther > 1 ? "s are" : " is"} waiting. ${d.orders.some((o) => o.status === "on_hold") ? "Top up your balance below and they go out automatically." : "We are looking at it."}</div>` : ""}
     <div class="grid g3">
       <div class="card stat"><div class="k">Balance</div><div class="v">${eur(d.balance)}</div></div>
       <div class="card stat"><div class="k">On the way</div><div class="v">${inTransit}</div></div>
@@ -511,26 +569,129 @@ async function clientOverview() {
         : `<p class="muted small">No prices yet. <a href="#/connect">Connect your store</a> and we price your products, or <a href="#/quotes">request a quote</a>.</p>`}</div>
     </div>
     <div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3>Latest orders</h3><a href="#/orders" class="small">All orders</a></div>
-      ${ordersTable(d.orders.slice(0, 6))}</div>`);
+      ${ordersTable(d.orders.slice(0, 6))}</div>`, clientCounts(d));
   bindTopup();
+  document.querySelectorAll("[data-of]").forEach((a) => (a.onclick = () => { clientOrderFilter = a.dataset.of; }));
+  bindOrderRows(d);
 }
 function ordersTable(orders) {
   if (!orders.length) return `<div class="empty">No orders yet. Once your store is connected, new orders appear here.</div>`;
   return `<div class="scroll"><table class="tbl" style="margin-top:8px"><tr><th>Order</th><th>Date</th><th>Items</th><th>Status</th><th class="num">Price</th><th>Tracking</th></tr>
-    ${orders.map((o) => `<tr><td>${esc(o.order_number || "–")}<div class="muted small">${esc(o.customer_name || "")} ${esc(o.country || "")}</div></td>
+    ${orders.map((o) => `<tr class="click" data-oid="${o.id}"><td><b>${esc(o.order_number || "–")}</b>${Number(o.unread) ? `<span class="dot">${o.unread}</span>` : ""}<div class="muted small">${esc(o.customer_name || "")} ${esc(o.country || "")}</div></td>
       <td>${date(o.created_at)}</td><td>${items(o.line_items)}</td>
       <td>${pill(o.status)}${o.status_note ? `<div class="muted small" style="max-width:220px">${esc(o.status_note)}</div>` : ""}</td>
       <td class="num">${eur(o.price_total)}</td>
       <td>${o.tracking_number ? link(o.tracking_url, o.tracking_number) : "–"}</td></tr>`).join("")}
   </table></div>`;
 }
+function bindOrderRows(d, reload) {
+  document.querySelectorAll("tr[data-oid]").forEach((tr) => tr.addEventListener("click", (e) => {
+    if (e.target.closest("a,button,input")) return;
+    clientOrderDetail(d.orders.find((o) => o.id === tr.dataset.oid), reload);
+  }));
+}
+async function clientOrderDetail(o, reload) {
+  const a = o.shipping_address || {};
+  const margin = o.order_total != null && o.price_total != null ? o.order_total - o.price_total : null;
+  const fix = o.status === "address_error" ? `<form id="addrForm" class="card" style="margin:12px 0;background:var(--red-soft);border-color:transparent">
+      <b>Fix the delivery address</b><p class="small" style="margin:4px 0 10px">${esc(o.status_note || "")}</p>
+      <div class="grid g2" style="gap:8px">${[["name", "Name", [a.first_name, a.last_name].filter(Boolean).join(" ") || a.name || o.customer_name], ["address1", "Street + number", a.address1], ["address2", "Apartment, etc.", a.address2], ["zip", "Postcode", a.zip], ["city", "City", a.city], ["province", "Province", a.province], ["country_code", "Country code (NL, BE…)", a.country_code || o.country], ["phone", "Phone", a.phone]]
+        .map(([k, l, v]) => `<div><label>${l}</label><input name="${k}" value="${esc(v || "")}" ${["address1", "zip", "city", "country_code"].includes(k) ? "required" : ""}></div>`).join("")}</div>
+      <button class="red" style="margin-top:10px">Save address, ship it</button><p class="small muted" style="margin:6px 0 0">Fix it in Shopify too, so your records match.</p></form>` : "";
+  const extra = `<div class="row" style="gap:6px;margin:4px 0 10px">${pill(o.status)}<span class="muted small">${o.status_note ? esc(o.status_note) : ""}</span></div>${fix}
+    <div class="grid g3" style="gap:10px;margin-bottom:6px">
+      <div class="card" style="padding:12px"><div class="muted small">Your customer paid</div><b>${o.order_total != null ? eur(o.order_total) : "–"}</b></div>
+      <div class="card" style="padding:12px"><div class="muted small">Shipdao price</div><b>${eur(o.price_total)}</b></div>
+      <div class="card" style="padding:12px"><div class="muted small">You keep (before ads, fees)</div><b style="color:${margin < 0 ? "var(--red)" : "var(--green)"}">${margin != null ? eur(margin) : "–"}</b></div></div>
+    <div class="grid g2" style="gap:12px;font-size:14px">
+      <div><div class="muted small">Ship to</div>${addrText(a) || "–"}${o.customer_email ? `<div class="muted small" style="margin-top:4px">${esc(o.customer_email)}</div>` : ""}</div>
+      <div><div class="muted small">Items</div>${items(o.line_items)}
+        <div class="muted small" style="margin-top:8px">Received ${ago(o.created_at)}${o.paid_at ? ` · paid ${ago(o.paid_at)}` : ""}${o.shipped_at ? ` · shipped ${ago(o.shipped_at)}` : ""}</div>
+        ${o.tracking_number ? `<div style="margin-top:6px">Tracking: ${link(o.tracking_url, o.tracking_number)} ${o.tracking_company ? `<span class="muted small">${esc(o.tracking_company)}</span>` : ""}</div>` : ""}
+        ${o.note ? `<div class="muted small" style="margin-top:6px">Note: ${esc(o.note)}</div>` : ""}</div></div>
+    <div class="hr" style="margin:14px 0 6px"></div><b class="small">Messages about this order</b>`;
+  await openThread({ orderId: o.id, clientId: ME.client?.id, title: `Order ${o.order_number || ""}`, extra, onClose: reload });
+  const f = document.getElementById("addrForm");
+  if (f) f.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(f), async () => {
+    await rpc("client_fix_address", { p_order: o.id, p_address: Object.fromEntries(new FormData(f).entries()) });
+    toast("Address saved. The order is back in the queue."); dlg.close();
+  }); };
+}
+let clientOrderFilter = "all";
 async function clientOrders() {
   loading("/orders");
   const d = await rpc("client_dashboard");
-  shell("/orders", `<div class="head"><h1>Orders</h1><div class="stat"><span class="k muted small">Balance </span><b>${eur(d.balance)}</b></div></div>
-    <div class="card">${ordersTable(d.orders)}</div>
-    <div class="card" style="margin-top:16px"><h3>Balance history</h3>${d.ledger.length ? `<table class="tbl" style="margin-top:8px"><tr><th>Date</th><th>What</th><th class="num">Amount</th></tr>
-      ${d.ledger.map((l) => `<tr><td>${date(l.created_at)}</td><td>${esc(l.description || l.type)}</td><td class="num" style="color:${l.amount < 0 ? "var(--ink)" : "var(--green)"}">${eur(l.amount)}</td></tr>`).join("")}</table>` : `<div class="empty">Nothing yet.</div>`}</div>`);
+  const late = (o) => ["paid", "sent_to_agent"].includes(o.status) && o.paid_at && Date.now() - new Date(o.paid_at) > 5 * 864e5;
+  const groups = {
+    all: ["All", () => true],
+    waiting: ["Waiting on you", (o) => ["on_hold", "issue", "address_error"].includes(o.status)],
+    address_error: ["Address problem", (o) => o.status === "address_error"],
+    unpaid: ["Not paid in Shopify", (o) => o.status === "unpaid"],
+    processing: ["Being processed", (o) => ["new", "paid", "sent_to_agent"].includes(o.status)],
+    late: ["Processing > 5 days", late],
+    shipped: ["Shipped", (o) => ["shipped", "delivered"].includes(o.status)],
+    cancelled: ["Cancelled", (o) => o.status === "cancelled"],
+  };
+  if (!groups[clientOrderFilter]) clientOrderFilter = "all";
+  shell("/orders", `<div class="head"><div><h1>Orders</h1><p class="muted" style="margin:4px 0 0">Click an order for the address, your margin and messages.</p></div>
+      <div class="row"><span class="small muted">Balance <b style="color:var(--ink)">${eur(d.balance)}</b></span><button class="ghost" id="oCsv">Export (CSV)</button></div></div>
+    <div class="chips" style="margin-bottom:12px">${Object.entries(groups).map(([k, [l, fn]]) => { const n = d.orders.filter(fn).length; return (k === "all" || n) ? `<button class="sm ${clientOrderFilter === k ? "on" : ""}" data-f="${k}">${l} <span class="muted">${n}</span></button>` : ""; }).join("")}</div>
+    <div class="filters"><input type="search" id="oQ" placeholder="Order, customer, product, tracking" style="min-width:240px"><label class="small muted" style="margin:0">From</label><input type="date" id="oFrom"><label class="small muted" style="margin:0">to</label><input type="date" id="oTo"></div>
+    <div class="card" id="oList"></div>`, clientCounts(d));
+  const list = () => {
+    const q = document.getElementById("oQ").value.trim().toLowerCase(), from = document.getElementById("oFrom").value, to = document.getElementById("oTo").value;
+    return d.orders.filter(groups[clientOrderFilter][1]).filter((o) => {
+      const day = o.created_at.slice(0, 10);
+      if (from && day < from) return false; if (to && day > to) return false;
+      return !q || [o.order_number, o.customer_name, o.tracking_number, o.country, ...(o.line_items || []).map((i) => i.title + " " + (i.variant_title || ""))].join(" ").toLowerCase().includes(q);
+    });
+  };
+  const draw = () => { document.getElementById("oList").innerHTML = ordersTable(list()); bindOrderRows(d, clientOrders); };
+  draw();
+  ["oQ", "oFrom", "oTo"].forEach((id) => (document.getElementById(id).oninput = draw));
+  document.querySelectorAll("[data-f]").forEach((b) => (b.onclick = () => { clientOrderFilter = b.dataset.f; clientOrders(); }));
+  document.getElementById("oCsv").onclick = () => {
+    const os = list(); if (!os.length) return toast("Nothing to export", true);
+    downloadCsv(`shipdao-orders-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["Order", "Date", "Customer", "Country", "Items", "Status", "Customer paid", "Shipdao price", "You keep", "Tracking", "Carrier"],
+      os.map((o) => [o.order_number, o.created_at.slice(0, 10), o.customer_name, o.country, (o.line_items || []).map((i) => `${i.quantity || 1}x ${i.title}${i.variant_title ? " (" + i.variant_title + ")" : ""}`).join("; "),
+        o.status, o.order_total, o.price_total, o.order_total != null && o.price_total != null ? (o.order_total - o.price_total).toFixed(2) : "", o.tracking_number, o.tracking_company]));
+  };
+}
+async function clientBalance() {
+  loading("/balance");
+  const d = await rpc("client_dashboard");
+  const months = [...new Set(d.ledger.map((l) => l.created_at.slice(0, 7)))];
+  const bank = !isPlaceholder(CONFIG.TOPUP_INSTRUCTIONS);
+  shell("/balance", `<div class="head"><div><h1>Balance</h1><p class="muted" style="margin:4px 0 0">Every top-up and every charge, with your balance after each one.</p></div></div>
+    <div class="grid g2">
+      <div class="card stat"><div class="k">Current balance</div><div class="v" style="color:${d.balance < 0 ? "var(--red)" : "inherit"}">${eur(d.balance)}</div>
+        <div class="muted small" style="margin-top:6px">${(() => { const spent = -d.ledger.filter((l) => l.type === "order" && Date.now() - new Date(l.created_at) < 7 * 864e5).reduce((a, l) => a + Number(l.amount), 0); return spent > 0 ? `You spent ${eur(spent)} in the last 7 days. Stay a week ahead.` : ""; })()}</div></div>
+      <div class="card"><h3>Top up</h3>${topupBlock()}
+        ${bank ? `<div class="hr"></div><h3>Paid by bank transfer?</h3><p class="muted small">Tell us, and we add it as soon as we see it on our account.</p>
+          <form id="trForm" class="row"><input name="amount" type="number" step="0.01" min="1" placeholder="Amount €" style="width:120px" required><input name="ref" placeholder="Name on account / reference" style="flex:1;min-width:160px" required><button class="ghost">I paid this</button></form>` : ""}</div></div>
+    ${d.payments.filter((p) => p.method === "banktransfer").length ? `<div class="card" style="margin-top:16px"><h3>Reported transfers</h3><table class="tbl" style="margin-top:8px"><tr><th>Date</th><th>Reference</th><th>Status</th><th class="num">Amount</th></tr>
+      ${d.payments.filter((p) => p.method === "banktransfer").map((p) => `<tr><td>${date(p.created_at)}</td><td>${esc(p.reference || "")}</td><td>${pill(p.status === "paid" ? "paid" : p.status)}</td><td class="num">${eur(p.amount)}</td></tr>`).join("")}</table></div>` : ""}
+    <div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3>Statement</h3>
+      <div class="row"><select id="bMonth" style="width:auto"><option value="">All months</option>${months.map((m) => `<option value="${m}">${new Date(m + "-01").toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</option>`).join("")}</select><button class="ghost sm" id="bCsv">Export (CSV)</button></div></div>
+      <div id="bList"></div></div>`, clientCounts(d));
+  bindTopup();
+  const rows = () => { const m = document.getElementById("bMonth").value; return d.ledger.filter((l) => !m || l.created_at.startsWith(m)); };
+  const draw = () => {
+    const ls = rows(), byOrder = Object.fromEntries(d.orders.map((o) => [o.id, o]));
+    const tin = ls.filter((l) => l.amount > 0).reduce((a, l) => a + Number(l.amount), 0), tout = ls.filter((l) => l.amount < 0).reduce((a, l) => a + Number(l.amount), 0);
+    document.getElementById("bList").innerHTML = ls.length ? `<div class="row small muted" style="margin:8px 0">In ${eur(tin)} · Out ${eur(-tout)}</div><div class="scroll"><table class="tbl"><tr><th>Date</th><th>What</th><th class="num">Amount</th><th class="num">Balance after</th></tr>
+      ${ls.map((l) => `<tr ${l.order_id && byOrder[l.order_id] ? `class="click" data-oid="${l.order_id}"` : ""}><td>${ago(l.created_at)}</td><td>${esc(l.description || l.type)}</td><td class="num" style="color:${l.amount < 0 ? "var(--ink)" : "var(--green)"}">${eur(l.amount)}</td><td class="num">${eur(l.balance_after)}</td></tr>`).join("")}</table></div>` : `<div class="empty">Nothing here.</div>`;
+    bindOrderRows(d, clientBalance);
+  };
+  draw(); document.getElementById("bMonth").onchange = draw;
+  document.getElementById("bCsv").onclick = () => { const ls = rows(); if (!ls.length) return toast("Nothing to export", true);
+    downloadCsv(`shipdao-statement-${document.getElementById("bMonth").value || "all"}.csv`, ["Date", "Type", "Description", "Amount", "Balance after"], ls.map((l) => [l.created_at.slice(0, 19).replace("T", " "), l.type, l.description, l.amount, l.balance_after])); };
+  const tf = document.getElementById("trForm");
+  if (tf) tf.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(tf), async () => {
+    await rpc("client_report_transfer", { p_amount: Number(tf.amount.value), p_reference: tf.ref.value.trim() });
+    toast("Thanks. We add it to your balance as soon as it arrives."); clientBalance();
+  }); };
 }
 async function clientQuotes() {
   loading("/quotes");
@@ -630,11 +791,14 @@ async function clientProducts() {
   shell("/products", `<div class="head"><div><h1>Products</h1><p class="muted" style="margin:4px 0 0">${d.products.length ? `${priced} of ${d.products.length} priced. Orders for priced products ship automatically.` : "Your Shopify products show up here once your store is connected."}</p></div>
       ${d.shops.some((s) => s.status === "active") ? `<button class="ghost" id="syncMine">Re-import from Shopify</button>` : `<a class="btn" style="text-decoration:none" href="#/connect">Connect store</a>`}</div>
     <div class="card">${d.products.length ? `<div class="row" style="margin-bottom:10px"><input class="search" id="pSearch" type="search" placeholder="Search products"></div>
-      <div class="scroll"><table class="tbl ptbl"><tr><th></th><th>Product</th><th class="num">Your shop price</th><th>Status</th><th class="num">Shipdao all-in</th><th class="num">Your margin</th><th>Delivery</th></tr>
+      <div class="scroll"><table class="tbl ptbl"><tr><th></th><th>Product</th><th class="num">Your shop price</th><th>Status</th><th class="num">Shipdao all-in</th><th class="num">Your margin</th><th>Delivery</th><th></th></tr>
       ${d.products.map((p) => `<tr data-p><td>${thumb(p.image_url)}</td><td><b>${esc(p.name)}</b>${p.variant_title ? `<div class="muted small">${esc(p.variant_title)}</div>` : ""}${p.sku ? `<div class="muted small">SKU ${esc(p.sku)}</div>` : ""}</td>
         <td class="num">${eur(p.shop_price)}</td><td>${spill(p.sourcing_status, true)}</td><td class="num"><b>${p.active ? eur(p.price_all_in) : "–"}</b></td>
-        <td class="num">${p.active && p.shop_price != null ? eur(p.shop_price - p.price_all_in) : "–"}</td><td>${esc(p.active && p.delivery_days ? p.delivery_days + " days" : "–")}</td></tr>`).join("")}</table></div>`
-      : `<div class="empty">No products yet.</div>`}</div>`);
+        <td class="num">${p.active && p.shop_price != null ? eur(p.shop_price - p.price_all_in) : "–"}</td><td>${esc(p.active && p.delivery_days ? p.delivery_days + " days" : "–")}</td>
+        <td><button class="sm ghost" data-pmsg="${p.id}" title="Messages about this product">Chat${Number(p.unread) ? `<span class="dot">${p.unread}</span>` : ""}</button></td></tr>`).join("")}</table></div>`
+      : `<div class="empty">No products yet.</div>`}</div>`, clientCounts(d));
+  document.querySelectorAll("[data-pmsg]").forEach((b) => (b.onclick = () => { const p = d.products.find((x) => x.id === b.dataset.pmsg);
+    openThread({ productId: p.id, clientId: ME.client?.id, title: p.name + (p.variant_title ? ` (${p.variant_title})` : ""), onClose: clientProducts }); }));
   const sm = document.getElementById("syncMine");
   if (sm) sm.onclick = () => busy(sm, async () => { if ((await syncProducts()) != null) clientProducts(); });
   const ps = document.getElementById("pSearch");
@@ -643,12 +807,13 @@ async function clientProducts() {
 
 // ===== ADMIN VIEWS =====
 async function adminCounts() {
-  const [q, o, p] = await Promise.all([
+  const [q, o, p, m] = await Promise.all([
     sb.from("quotes").select("id", { count: "exact", head: true }).eq("status", "requested"),
-    sb.from("orders").select("id", { count: "exact", head: true }).in("status", ["paid", "on_hold", "issue"]),
+    sb.from("orders").select("id", { count: "exact", head: true }).in("status", ["paid", "on_hold", "issue", "address_error"]),
     sb.from("products").select("id", { count: "exact", head: true }).eq("sourcing_status", "to_source").or("shopify_status.is.null,shopify_status.neq.DELETED"),
+    sb.from("messages").select("id", { count: "exact", head: true }).eq("from_admin", false).is("read_by_admin_at", null),
   ]).then((rs) => rs.map((x) => x.count));
-  return { quotes: q || 0, orders: o || 0, products: p || 0 };
+  return { quotes: q || 0, orders: o || 0, products: p || 0, messages: m || 0 };
 }
 async function adminOverview() {
   loading("/admin");
@@ -656,13 +821,18 @@ async function adminOverview() {
   const t = ov.totals, cs = ov.clients;
   const go = (hash, f) => `href="#${hash}" data-go="${f || ""}"`;
   const todo = [
+    [t.transfers, "bank transfer(s) reported, check your account", "/admin", "", "red"],
+    [t.unread, "unread message(s) from stores", "/admin/messages", "", "red"],
     [t.paid, "paid order(s) to send to your agent", "/admin/orders", "todo", "red"],
+    [t.late, "order(s) paid more than 5 days ago and not shipped", "/admin/orders", "late", "red"],
+    [t.address_error, "order(s) waiting for the store to fix the address", "/admin/orders", "waiting"],
     [t.sent_to_agent, "order(s) with your agent, waiting for tracking", "/admin/orders", "todo"],
     [t.issue, "order(s) missing a price — price the product, then retry", "/admin/orders", "waiting", "red"],
     [t.on_hold, "order(s) on hold, client balance too low", "/admin/orders", "waiting"],
     [t.open_quotes, "quote request(s) to answer", "/admin/quotes", ""],
     [t.to_source, "product(s) still to source", "/admin/products", "to_source"],
     [t.sourcing, "product(s) being sourced, waiting for supplier prices", "/admin/products", "sourcing"],
+    [t.unpaid, "order(s) not paid in Shopify yet (nothing to do)", "/admin/orders", "unpaid"],
   ].filter((x) => x[0] > 0);
   const lowBal = cs.filter((c) => c.on_hold_value > 0 || (c.status === "active" && c.balance < 50));
   const miss = missingCompany();
@@ -677,6 +847,10 @@ async function adminOverview() {
       <div class="card stat"><div class="k">To ship</div><div class="v">${t.to_ship}</div><div class="muted small">${t.paid} new · ${t.sent_to_agent} at agent</div></div>
       <div class="card stat"><div class="k">Client balances held</div><div class="v">${eur(t.balances)}</div><div class="muted small">${cs.length} clients · ${t.shops} stores connected</div></div>
     </div>
+    ${ov.transfers.length ? `<div class="card" style="margin-top:16px;border-color:var(--amber)"><h3>Reported bank transfers</h3><p class="muted small">Only confirm once you see the money on your account.</p>
+      <table class="tbl" style="margin-top:8px"><tr><th>Client</th><th>Reported</th><th>Reference</th><th class="num">Amount</th><th></th></tr>
+      ${ov.transfers.map((p) => `<tr><td>${esc(p.client)}</td><td>${ago(p.created_at)}</td><td>${esc(p.reference || "")}</td><td class="num"><b>${eur(p.amount)}</b></td>
+        <td class="num"><button class="sm ghost" data-tr="${p.id}" data-ok="0">Not received</button> <button class="sm" data-tr="${p.id}" data-ok="1">Received, add</button></td></tr>`).join("")}</table></div>` : ""}
     <div class="grid g2" style="margin-top:16px">
       <div class="card"><h3>To do</h3>${todo.length ? `<div style="margin-top:8px">${todo.map(([n, l, h, f, c]) =>
         `<a ${go(h, f)} style="display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)">
@@ -697,6 +871,12 @@ async function adminOverview() {
         : `<div class="empty">No orders yet.</div>`}</div>`, counts);
   bindClientActions(adminOverview);
   document.getElementById("refresh").onclick = adminOverview;
+  document.querySelectorAll("[data-tr]").forEach((b) => (b.onclick = () => busy(b, async () => {
+    const ok = b.dataset.ok === "1";
+    if (!ok && !(await confirmAsk("Mark as not received?", "The store sees it as rejected. Do this only if the money really is not there.", "Not received"))) return;
+    const res = await rpc("admin_confirm_transfer", { p_payment: b.dataset.tr, p_accept: ok });
+    toast(ok ? `Added. New balance ${eur(res.balance)}${res.orders_released ? `, ${res.orders_released} order(s) released` : ""}` : "Marked as not received"); adminOverview();
+  })));
   document.querySelectorAll("[data-go]").forEach((a) => a.addEventListener("click", () => {
     const f = a.dataset.go; if (!f) return;
     if (a.getAttribute("href").includes("/orders")) orderFilter = f; else if (a.getAttribute("href").includes("/products")) { prodFilter = f; prodClient = a.dataset.client || ""; }
@@ -766,14 +946,16 @@ async function adminQuotes() {
 let orderFilter = "todo";
 async function adminOrders() {
   loading("/admin/orders");
-  const filters = { todo: ["paid", "sent_to_agent"], waiting: ["on_hold", "issue"], shipped: ["shipped", "delivered"], all: null };
+  const filters = { todo: ["paid", "sent_to_agent"], late: ["paid", "sent_to_agent"], waiting: ["on_hold", "issue", "address_error"], unpaid: ["unpaid"], shipped: ["shipped", "delivered"], all: null };
   let qy = sb.from("orders").select("*, clients(name)").order("created_at", { ascending: false }).limit(300);
+  if (!(orderFilter in filters)) orderFilter = "todo";
   if (filters[orderFilter]) qy = qy.in("status", filters[orderFilter]);
+  if (orderFilter === "late") qy = qy.lt("paid_at", new Date(Date.now() - 5 * 864e5).toISOString());
   const [{ data: os, error }, counts] = await Promise.all([qy, adminCounts()]);
   if (error) return toast(error.message, true);
   shell("/admin/orders", `<div class="head"><div><h1>Orders</h1><p class="muted" style="margin:4px 0 0">Send paid orders to your agent, then add tracking.</p></div>
       <div class="row"><button class="ghost" id="csv">Export for agent (CSV)</button><button id="manual">+ Manual order</button></div></div>
-    <div class="row" style="justify-content:space-between;margin-bottom:14px"><div class="chips">${[["todo", "To ship"], ["waiting", "Waiting"], ["shipped", "Shipped"], ["all", "All"]].map(([k, l]) => `<button class="sm ${orderFilter === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("")}</div>
+    <div class="row" style="justify-content:space-between;margin-bottom:14px"><div class="chips">${[["todo", "To ship"], ["late", "Late (> 5 days)"], ["waiting", "Waiting"], ["unpaid", "Unpaid in Shopify"], ["shipped", "Shipped"], ["all", "All"]].map(([k, l]) => `<button class="sm ${orderFilter === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("")}</div>
       <input class="search" id="oSearch" type="search" placeholder="Search order, client, customer, tracking"></div>
     <div class="card">${os.length ? `<div class="scroll"><table class="tbl"><tr><th>Order</th><th>Client</th><th>Ship to</th><th>Items</th><th>Status</th><th class="num">Price / cost</th><th>Tracking</th><th></th></tr>
       ${os.map((o) => `<tr data-o="${o.id}"><td><b>${esc(o.order_number || "–")}</b><div class="muted small">${date(o.created_at)}</div></td>
@@ -788,6 +970,8 @@ async function adminOrders() {
           ${["on_hold", "issue", "new"].includes(o.status) ? `<button class="sm ghost" data-act="retry">Retry charge</button>` : ""}
           ${o.status === "paid" ? `<button class="sm ghost" data-act="agent">Sent to agent</button>` : ""}
           ${["paid", "sent_to_agent"].includes(o.status) ? `<button class="sm" data-act="ship">Ship + tracking</button>` : ""}
+          ${["paid", "sent_to_agent"].includes(o.status) ? `<button class="sm ghost" data-act="address">Address problem</button>` : ""}
+          <button class="sm ghost" data-act="chat">Chat</button>
           ${!["cancelled", "shipped", "delivered"].includes(o.status) ? `<button class="sm ghost" data-act="cancel">Cancel / refund</button>` : ""}
         </div></td></tr>`).join("")}</table></div>` : `<div class="empty">Nothing here.</div>`}</div>`, counts);
   document.querySelectorAll("[data-f]").forEach((b) => (b.onclick = () => { orderFilter = b.dataset.f; adminOrders(); }));
@@ -805,6 +989,11 @@ async function adminOrders() {
   document.querySelectorAll("[data-o] [data-act]").forEach((b) => (b.onclick = async () => {
     const tr = b.closest("[data-o]"), id = tr.dataset.o, act = b.dataset.act; b.disabled = true;
     try {
+      if (act === "chat") { const o = os.find((x) => x.id === id); b.disabled = false; return openThread({ orderId: id, clientId: o.client_id, title: `Order ${o.order_number || ""} · ${o.clients?.name || ""}`, onClose: adminOrders }); }
+      if (act === "address") {
+        const r = await ask({ title: "Address problem", body: "The store sees this and can correct the address in their portal. The order stops until then.", fields: [{ name: "note", label: "What is wrong?", value: "House number missing", required: true }], ok: "Send to store" });
+        if (!r) return; await rpc("admin_flag_address", { p_order: id, p_note: r.note }); toast("Sent to the store");
+      }
       if (act === "retry") { const s = await rpc("admin_retry_order", { p_order: id }); toast("Status: " + s); }
       if (act === "agent") { const { error } = await sb.from("orders").update({ status: "sent_to_agent" }).eq("id", id); if (error) throw error; }
       if (act === "cancel") {
@@ -848,6 +1037,26 @@ async function manualOrder() {
   if (error) return toast(error.message, true);
   const s = await rpc("admin_retry_order", { p_order: data.id }); toast("Order created: " + s); adminOrders();
 }
+async function adminMessages() {
+  loading("/admin/messages");
+  const [{ data: ms, error }, counts] = await Promise.all([
+    sb.from("messages").select("*, clients(name), orders(order_number), products(name, variant_title)").order("created_at", { ascending: false }).limit(500), adminCounts()]);
+  if (error) return toast(error.message, true);
+  const threads = new Map();
+  for (const m of ms) { const k = m.order_id ? "o" + m.order_id : "p" + m.product_id; if (!threads.has(k)) threads.set(k, { last: m, unread: 0 }); if (!m.from_admin && !m.read_by_admin_at) threads.get(k).unread++; }
+  const list = [...threads.values()].sort((a, b) => (b.unread > 0) - (a.unread > 0) || b.last.created_at.localeCompare(a.last.created_at));
+  shell("/admin/messages", `<div class="head"><div><h1>Messages</h1><p class="muted" style="margin:4px 0 0">Every conversation about an order or product, unread first.</p></div></div>
+    <div class="card">${list.length ? `<table class="tbl"><tr><th>Store</th><th>About</th><th>Last message</th><th>When</th></tr>
+      ${list.map(({ last: m, unread }) => `<tr class="click" data-thr="${m.order_id ? "o" : "p"}:${m.order_id || m.product_id}:${m.client_id}">
+        <td><b>${esc(m.clients?.name || "")}</b>${unread ? `<span class="dot">${unread}</span>` : ""}</td>
+        <td>${m.order_id ? `Order ${esc(m.orders?.order_number || "")}` : `Product ${esc(m.products?.name || "")}${m.products?.variant_title ? ` (${esc(m.products.variant_title)})` : ""}`}</td>
+        <td class="small" style="max-width:380px">${m.from_admin ? '<span class="muted">You: </span>' : ""}${esc(m.body.slice(0, 120))}</td><td class="small muted">${ago(m.created_at)}</td></tr>`).join("")}</table>`
+      : `<div class="empty">No messages yet. Start one from an order or a product.</div>`}</div>`, counts);
+  document.querySelectorAll("[data-thr]").forEach((tr) => (tr.onclick = () => {
+    const [kind, id, clientId] = tr.dataset.thr.split(":");
+    openThread({ orderId: kind === "o" ? id : null, productId: kind === "p" ? id : null, clientId, title: tr.children[1].textContent + " · " + tr.children[0].firstChild.textContent, onClose: adminMessages });
+  }));
+}
 let prodFilter = "to_source", prodClient = "";
 async function fetchAll(build) {
   const out = [];
@@ -887,7 +1096,7 @@ async function adminProducts() {
         <td><input name="delivery_days" placeholder="7-10" value="${esc(p.delivery_days || "")}" style="width:58px"></td>
         <td class="num"><b data-allin>${eur(p.price_all_in)}</b><div class="muted small" data-profit></div></td>
         <td><select name="sourcing_status" style="width:auto">${["to_source", "sourcing", "priced", "skip"].map((st) => `<option value="${st}" ${p.sourcing_status === st ? "selected" : ""}>${st.replace("_", " ")}</option>`).join("")}</select></td>
-        <td><button class="sm ghost" data-copy title="Copy costs to the other variants of this product" aria-label="Copy to variants">⧉</button></td></tr>`).join("")}</table></div>`
+        <td><button class="sm ghost" data-copy title="Copy costs to the other variants of this product" aria-label="Copy to variants">⧉</button><button class="sm ghost" data-pchat title="Ask the store about this product" style="margin-top:4px">💬</button></td></tr>`).join("")}</table></div>`
       : `<div class="empty">${prodFilter === "to_source" ? "Nothing left to source. 🎉" : "No products here."}${shops?.length ? "" : "<br>No Shopify store is connected yet. Products appear once a client connects their store."}</div>`}</div>
     <div class="sticky"><button class="red" id="pSave" disabled>Save changes</button></div>`, counts);
 
@@ -912,6 +1121,9 @@ async function adminProducts() {
       dirtyCount();
     });
     tr.querySelector("select").addEventListener("change", () => { tr.classList.add("dirty"); dirtyCount(); });
+    tr.querySelector("[data-pchat]").onclick = () => { const p = list.find((x) => x.id === tr.dataset.pid);
+      openThread({ productId: p.id, clientId: p.client_id, title: `${p.name}${p.variant_title ? ` (${p.variant_title})` : ""} · ${p.clients?.name || ""}`,
+        extra: `<p class="muted small">Ask the store to confirm a size, colour or replacement before you buy.</p>` }); };
     tr.querySelector("[data-copy]").onclick = () => {
       const sibs = rows.filter((x) => x !== tr && x.dataset.prod === tr.dataset.prod);
       if (!sibs.length) return toast("No other variants of this product in this list", true);
@@ -1003,8 +1215,8 @@ async function adminClients() {
 
 // ===== ROUTER =====
 const routes = {
-  client: { "/": clientOverview, "/orders": clientOrders, "/quotes": clientQuotes, "/products": clientProducts, "/connect": clientConnect, "/account": clientAccount },
-  admin: { "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/clients": adminClients },
+  client: { "/": clientOverview, "/orders": clientOrders, "/quotes": clientQuotes, "/products": clientProducts, "/balance": clientBalance, "/connect": clientConnect, "/account": clientAccount },
+  admin: { "/admin": adminOverview, "/admin/quotes": adminQuotes, "/admin/orders": adminOrders, "/admin/products": adminProducts, "/admin/messages": adminMessages, "/admin/clients": adminClients },
 };
 async function route() {
   const [h, q] = location.hash.replace(/^#/, "").split("?");
