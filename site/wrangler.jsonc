@@ -1,0 +1,6 @@
+// Cloudflare Workers: the public site (shipdao.nl). Create a second Worker from this repo with root directory "site".
+{
+  "name": "shipdao-site",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./", "not_found_handling": "404-page", "html_handling": "drop-trailing-slash" }
+}
