@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     // Register webhooks ("already taken" errors are fine)
     const webhookUrl = `${supabaseUrl}/functions/v1/shopify-webhook`;
     const failed: string[] = [];
-    for (const topic of ["ORDERS_CREATE", "APP_UNINSTALLED", "PRODUCTS_CREATE", "PRODUCTS_UPDATE", "PRODUCTS_DELETE"]) {
+    for (const topic of ["ORDERS_CREATE", "ORDERS_PAID", "ORDERS_CANCELLED", "APP_UNINSTALLED", "PRODUCTS_CREATE", "PRODUCTS_UPDATE", "PRODUCTS_DELETE"]) {
       const r = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": access_token },

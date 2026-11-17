@@ -53,6 +53,18 @@ Deno.serve(async (req) => {
       result = data;
       break;
     }
+    case "orders/paid": {
+      const { data, error } = await admin.rpc("service_order_paid", { p_shop: shop, p_payload: payload });
+      if (error) { console.error("paid", error); return new Response("Error", { status: 500 }); }
+      result = data;
+      break;
+    }
+    case "orders/cancelled": {
+      const { data, error } = await admin.rpc("service_order_cancelled", { p_shop: shop, p_payload: payload });
+      if (error) { console.error("cancelled", error); return new Response("Error", { status: 500 }); }
+      result = data;
+      break;
+    }
     case "products/create":
     case "products/update": {
       const { data, error } = await admin.rpc("service_upsert_products", { p_shop: shop, p_items: productItems(payload, shop) });
