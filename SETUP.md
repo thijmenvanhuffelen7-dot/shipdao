@@ -87,3 +87,18 @@ Supabase → Edge Functions → Secrets:
 - Elke betaling wordt maar één keer bijgeboekt. Een chargeback haalt het bedrag weer van het saldo af.
 - Wachtende orders worden direct afgerekend zodra er saldo bij komt.
 - De transactiekosten van Mollie zijn voor jou.
+
+## Agent (China)
+1. Portal → **Insights → Agent team** → vul het e-mailadres van je agent in → **Invite agent**.
+2. Stuur je agent de link `https://app.shipdao.nl/#/join`. Daar maakt hij een account met **precies dat e-mailadres**.
+3. De agent ziet alleen betaalde orders, adressen, supplier-links en productnotities. Nooit jouw prijzen of marges.
+4. Per order: *Accept* → inkopen → QC-foto's uploaden → tracking + echte kosten invullen → *Ship*. De tracking gaat automatisch naar Shopify.
+5. Veel orders? *Export to-buy list (CSV)*, kolommen Tracking/Carrier/Cost invullen, *Import tracking (CSV)*.
+6. Probleem (uitverkocht, andere maat)? De agent vult het in bij *Report*. Jij ziet het bovenaan je overzicht.
+
+## Framer-formulier → Leads
+Het "Free price check"-formulier stuurt naar je Gmail én naar **Leads** in de portal (webhook naar `lead-intake`, beveiligd met een token in de database).
+
+## Monitoring
+**Insights → System health** laat per winkel zien wanneer de laatste webhook binnenkwam en welke fouten er waren.
+"invalid HMAC signature" = `SHOPIFY_API_SECRET` in Supabase klopt niet met je Shopify-app.
