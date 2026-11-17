@@ -31,12 +31,17 @@ function productItems(p: any, shop: string) {
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const secret = Deno.env.get("SHOPIFY_API_SECRET");
-  if (!secret) return new Response("Not configured", { status: 500 });
-
   const raw = await req.text();
   const given = req.headers.get("X-Shopify-Hmac-Sha256") ?? "";
-  if (!safeEqual(await hmacBase64(secret, raw), given)) {
-    // a wrong signature usually means SHOPIFY_API_SECRET does not match the app; record it so it shows up in Health
+  // signed with the Shipdao app secret, or (manually connected store) with the secret of the store's own app
+  let valid = !!secret && safeEqual(await hmacBase64(secret, raw), given);
+  if (!valid && given) {
+    const a = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: own } = await a.rpc("service_shop_webhook_secret", { p_shop: (req.headers.get("X-Shopify-Shop-Domain") ?? "").toLowerCase() });
+    if (own) valid = safeEqual(await hmacBase64(String(own), raw), given);
+  }
+  if (!valid) {
+    // a wrong signature usually means the app secret does not match; record it so it shows up in Health
     const a = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     await a.from("system_events").insert({ source: "shopify", shop: (req.headers.get("X-Shopify-Shop-Domain") ?? "").toLowerCase() || null,
       topic: req.headers.get("X-Shopify-Topic"), ok: false, detail: "invalid HMAC signature" }).then(() => {}, () => {});

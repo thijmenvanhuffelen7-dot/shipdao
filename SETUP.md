@@ -109,3 +109,9 @@ Het "Free price check"-formulier stuurt naar je Gmail én naar **Leads** in de p
 - **Partners**: Admin → Partners → partner toevoegen (naam, e-mail, code, commissie per verzonden order). Hun link is `https://shipdao.nl/?ref=code`. Winkels die zich via die link aanmelden, worden automatisch aan de partner gekoppeld. Je kunt dit ook later handmatig doen via Clients → Edit. De partner logt in op de portal met hetzelfde e-mailadres en ziet daar zijn winkels en verdiensten. Uitbetalen doe je zelf; daarna klik je op "Record payout".
 - **Prijzen in bulk**: Admin → Products → Export (CSV), vul de €-kolommen in en kies Import prices (CSV). Lege cellen worden niet aangepast.
 - **Agent**: de agent-portal staat standaard in het Chinees. Onderaan de zijbalk kan de agent wisselen naar Engels.
+
+## Shopify koppelen zonder Shopify-review (handmatig)
+Zolang je eigen Shopify-app niet door Shopify is goedgekeurd, koppelen klanten hun winkel met een **eigen app**. Hoe dat gaat, staat stap voor stap op hun pagina Connect store:
+Shopify admin → Settings → Apps → Develop apps → Build apps in Dev Dashboard → app "Shipdao" → scopes plakken → protected customer data aanzetten → installeren → Client ID en Client secret in de portal plakken.
+Daarna haalt de backend elke 24 uur automatisch een nieuw token op (Shopify geeft deze tokens maar 24 uur). Webhooks worden gecontroleerd met de secret van de app van die winkel.
+Is je eigen app wel goedgekeurd? Zet dan `SHOPIFY_ONE_CLICK: true` in `public/index.html`. Dan krijgen klanten ook de knop "Connect in one click".

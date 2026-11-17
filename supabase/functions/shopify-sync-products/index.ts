@@ -28,18 +28,35 @@ const QUERY = `query($cursor: String) {
 
 type Item = Record<string, string | null>;
 
+// Manually connected stores (their own app) get 24-hour tokens: refresh when it is about to expire.
+// deno-lint-ignore no-explicit-any
+async function freshToken(admin: any, shopId: string, info: any): Promise<string> {
+  if (!info.app_client_id || !info.app_secret) return info.access_token;
+  if (info.expires_at && new Date(info.expires_at).getTime() - Date.now() > 10 * 60 * 1000) return info.access_token;
+  const r = await fetch(`https://${info.shop_domain}/admin/oauth/access_token`, {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    body: new URLSearchParams({ grant_type: "client_credentials", client_id: info.app_client_id, client_secret: info.app_secret }),
+  });
+  const body = await r.json().catch(() => null);
+  if (!r.ok || !body?.access_token) throw new Error(`${info.shop_domain}: could not refresh the Shopify token (${r.status}). Reconnect the store.`);
+  await admin.rpc("service_store_token", { p_shop_id: shopId, p_token: body.access_token, p_scopes: body.scope ?? "", p_expires_in: body.expires_in ?? 86399 });
+  return body.access_token;
+}
+
+
 async function syncShop(admin: ReturnType<typeof createClient>, shopId: string) {
   const { data: info, error } = await admin.rpc("service_shop_token", { p_shop_id: shopId });
   if (error || !info) throw new Error("Store not connected");
-  if (!String(info.scopes ?? "").includes("read_products"))
+  if (!/(read|write)_products/.test(String(info.scopes ?? "")))
     throw new Error(`${info.shop_domain}: reconnect the store so Shipdao may read products`);
+  const token = await freshToken(admin, shopId, info);
 
   const items: Item[] = [];
   let cursor: string | null = null;
   for (let page = 0; page < 400; page++) { // up to 4000 products
     const r = await fetch(`https://${info.shop_domain}/admin/api/${API_VERSION}/graphql.json`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": info.access_token },
+      headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
       body: JSON.stringify({ query: QUERY, variables: { cursor } }),
     });
     if (r.status === 429) { await new Promise((ok) => setTimeout(ok, 2000)); page--; continue; }

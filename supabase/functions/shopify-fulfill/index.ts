@@ -13,6 +13,22 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
+
+// Manually connected stores (their own app) get 24-hour tokens: refresh when it is about to expire.
+// deno-lint-ignore no-explicit-any
+async function freshToken(admin: any, shopId: string, info: any): Promise<string> {
+  if (!info.app_client_id || !info.app_secret) return info.access_token;
+  if (info.expires_at && new Date(info.expires_at).getTime() - Date.now() > 10 * 60 * 1000) return info.access_token;
+  const r = await fetch(`https://${info.shop_domain}/admin/oauth/access_token`, {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    body: new URLSearchParams({ grant_type: "client_credentials", client_id: info.app_client_id, client_secret: info.app_secret }),
+  });
+  const body = await r.json().catch(() => null);
+  if (!r.ok || !body?.access_token) throw new Error(`${info.shop_domain}: could not refresh the Shopify token (${r.status}). Reconnect the store.`);
+  await admin.rpc("service_store_token", { p_shop_id: shopId, p_token: body.access_token, p_scopes: body.scope ?? "", p_expires_in: body.expires_in ?? 86399 });
+  return body.access_token;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -35,11 +51,13 @@ Deno.serve(async (req) => {
   if (order.shop_id && order.shopify_order_id) {
     const { data: info, error } = await admin.rpc("service_fulfillment_info", { p_order: order_id });
     if (error || !info) return json({ error: "Store not connected any more" }, 400);
+    let token: string;
+    try { token = await freshToken(admin, info.shop_id, info); } catch (e) { return json({ error: e instanceof Error ? e.message : "Token refresh failed" }, 400); }
 
     const gql = async (query: string, variables: Record<string, unknown>) => {
       const r = await fetch(`https://${info.shop_domain}/admin/api/${API_VERSION}/graphql.json`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": info.access_token },
+        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
         body: JSON.stringify({ query, variables }),
       });
       return r.json();

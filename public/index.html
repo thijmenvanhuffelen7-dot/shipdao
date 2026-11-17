@@ -139,6 +139,7 @@ tr.click{cursor:pointer}tr.click:hover td{background:var(--rice)}
 .amounts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
 .check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);margin:4px 0 12px}.check input{width:auto;margin-top:3px}
 .notice{background:var(--amber-soft);color:var(--amber);border-radius:10px;padding:12px 14px;font-size:14px}
+.steps-list{margin:0 0 0 18px;padding:0;display:grid;gap:10px;font-size:14px}.steps-list li{padding-left:4px}
 </style>
 </head>
 <body>
@@ -181,6 +182,8 @@ const CONFIG = {
   // Bank transfer as a fallback. Leave the [brackets] in and it stays hidden.
   TOPUP_INSTRUCTIONS: "Transfer the amount to [IBAN] in the name of [company], with your store name as reference. Your balance is updated as soon as we receive it.",
   WHATSAPP: "", // e.g. "31612345678"
+  // true once your public Shopify app is approved by Shopify (1-click connect). Until then stores connect with their own app.
+  SHOPIFY_ONE_CLICK: false,
 };
 // =====================================================
 
@@ -384,8 +387,8 @@ const DOCS = () => [
     <h3>What the portal is not</h3><p>It is not your store. Your product pages, the prices your customers pay, refunds to customers and marketing all stay in Shopify.</p>`],
   ["account", "Creating your account", `<p>Go to <a href="#/signup">Get started</a>, fill in your store name, your name, email and a password (8+ characters), and accept the terms. Confirm the email we send you and you are in.</p>
     <p>Forgot your password? Use <a href="#/reset">Forgot password</a> on the login screen. Store name, store URL and WhatsApp number can be changed under <b>Account</b>.</p>`],
-  ["connect", "Connecting Shopify", `<ol><li>In the portal open <b>Connect store</b>.</li><li>Type your <b>.myshopify.com</b> address (Shopify → Settings → Domains shows it).</li><li>Click <b>Connect Shopify</b> and approve the permissions in Shopify.</li><li>You come back to the portal and your products are already imported.</li></ol>
-    <p>No app to create, no keys to send. New and changed products in Shopify come in automatically. You can import again any time with <b>Re-import from Shopify</b>.</p>
+  ["connect", "Connecting Shopify", `${CONFIG.SHOPIFY_ONE_CLICK ? `<ol><li>In the portal open <b>Connect store</b>.</li><li>Type your <b>.myshopify.com</b> address (Shopify → Settings → Domains shows it).</li><li>Click <b>Connect Shopify</b> and approve the permissions in Shopify.</li><li>You come back to the portal and your products are already imported.</li></ol>` : `<ol><li>In your Shopify admin go to <b>Settings → Apps → Develop apps</b> and click <b>Build apps in Dev Dashboard</b>. Create an app called <b>Shipdao</b>.</li><li>Create a version, add the access scopes shown on <b>Connect store</b> in your portal, and release it.</li><li>Turn on <b>protected customer data</b> (name, address, email, phone) and <b>install</b> the app on your store.</li><li>Paste the app's <b>Client ID</b> and <b>Client secret</b> on <b>Connect store</b> and click Connect. Your products are imported straight away.</li></ol>`}
+    <p>New and changed products in Shopify come in automatically. You can import again any time with <b>Re-import from Shopify</b>.</p>
     <h3>What we can see</h3><p>Your orders (to ship them), your products (to price them) and the fulfilment of orders we handle (to add tracking). Nothing else. Uninstall the app in Shopify and the connection stops at once.</p>`],
   ["products", "Products and prices", `<p>Every product and variant from your store is listed under <b>Products</b>, with your shop price, our all-in price and what you keep.</p>
     <dl class="kv"><dt>Waiting for price</dt><dd>Imported, not priced yet. Orders for it wait.</dd><dt>Being sourced</dt><dd>We are getting prices from suppliers.</dd><dt>Priced</dt><dd>Agreed price. Orders for it are charged and shipped automatically.</dd></dl>
@@ -892,18 +895,48 @@ async function clientQuotes() {
   document.querySelectorAll("[data-acc]").forEach((b) => (b.onclick = async () => { await busy(b, () => rpc("decide_quote", { p_quote: b.dataset.acc, p_accept: true })); toast("Prices accepted. Connect your store to start."); clientQuotes(); }));
   document.querySelectorAll("[data-dec]").forEach((b) => (b.onclick = async () => { if (await confirmAsk("Decline this quote?", "You can always request a new quote later.", "Decline")) { await busy(b, () => rpc("decide_quote", { p_quote: b.dataset.dec, p_accept: false })); clientQuotes(); } }));
 }
+const SHOPIFY_SCOPES = "read_orders,read_products,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders";
 async function clientConnect() {
   loading("/connect");
   const d = await rpc("client_dashboard");
+  const active = d.shops.some((s) => s.status === "active");
   shell("/connect", `<div class="head"><div><h1>Connect your store</h1><p class="muted" style="margin:4px 0 0">New orders flow to us automatically, and tracking goes back to your customer.</p></div></div>
-    <div class="card"><h3>Shopify</h3>
-      ${d.shops.length ? `<table class="tbl" style="margin:10px 0 18px"><tr><th>Store</th><th>Status</th><th>Since</th></tr>${d.shops.map((s) => `<tr><td>${esc(s.shop_domain)}</td><td>${pill(s.status === "active" ? "connected" : s.status)}</td><td>${date(s.installed_at)}</td></tr>`).join("")}</table>` : ""}
-      ${d.shops.some((s) => s.status === "active") ? `<div class="row" style="margin-bottom:18px"><button class="ghost" id="syncMine">Re-import products from Shopify</button><span class="muted small">${d.products.length} products imported. New products come in automatically.</span></div>` : ""}
+    ${d.shops.length ? `<div class="card" style="margin-bottom:16px"><h3>Your stores</h3><table class="tbl" style="margin:10px 0 ${active ? "14px" : "0"}"><tr><th>Store</th><th>Status</th><th>Since</th></tr>${d.shops.map((s) => `<tr><td>${esc(s.shop_domain)}</td><td>${pill(s.status === "active" ? "connected" : s.status)}</td><td>${date(s.installed_at)}</td></tr>`).join("")}</table>
+      ${active ? `<div class="row"><button class="ghost" id="syncMine">Re-import products from Shopify</button><span class="muted small">${d.products.length} products imported. New products come in automatically.</span></div>` : ""}</div>` : ""}
+    ${CONFIG.SHOPIFY_ONE_CLICK ? `<div class="card" style="margin-bottom:16px"><h3>Connect in one click</h3>
       <form id="shopForm" class="row" style="margin-top:12px"><input name="shop" placeholder="yourstore.myshopify.com" style="flex:1;min-width:220px" required><button>Connect Shopify</button></form>
-      <p class="muted small" style="margin-top:10px">Use your .myshopify.com address. You find it in Shopify under Settings → Domains.</p></div>`);
+      <p class="muted small" style="margin-top:10px">Use your .myshopify.com address. You find it in Shopify under Settings → Domains.</p></div>` : ""}
+    <div class="card"><h3>${CONFIG.SHOPIFY_ONE_CLICK ? "Or connect with your own app" : "Connect Shopify"}</h3>
+      <p class="muted small" style="margin:4px 0 14px">About 10 minutes, once. You create a small private app in your own store and give us its keys. You can remove it any time, and then we lose access straight away.</p>
+      <ol class="steps-list">
+        <li>In your Shopify admin go to <b>Settings → Apps → Develop apps</b> and click <b>Build apps in Dev Dashboard</b>. Create an app called <b>Shipdao</b>.</li>
+        <li>In the app, create a version. Under <b>Access scopes</b> paste these, then release the version:
+          <div class="row" style="margin:8px 0;gap:6px;flex-wrap:nowrap"><input id="scopes" readonly value="${SHOPIFY_SCOPES}" style="flex:1;font-family:ui-monospace,monospace;font-size:12px"><button type="button" class="ghost sm" id="copyScopes">Copy</button></div></li>
+        <li>Turn on <b>protected customer data</b> for name, address, email and phone, so we can ship your orders.</li>
+        <li><b>Install</b> the app on your store.</li>
+        <li>Open the app's <b>Settings</b>, copy the <b>Client ID</b> and <b>Client secret</b> and paste them below.</li>
+      </ol>
+      <form id="manualForm" style="margin-top:14px;max-width:560px">
+        <div class="field"><label>Store address</label><input name="shop" placeholder="yourstore.myshopify.com" required></div>
+        <div class="field"><label>Client ID</label><input name="client_id" autocomplete="off" required></div>
+        <div class="field"><label>Client secret</label><input name="client_secret" type="password" autocomplete="off" required></div>
+        <button>Connect</button>
+        <p class="muted small" style="margin-top:8px">Stuck? Message us with a screenshot of the step, and we help you through it.</p></form></div>`);
   const sm = document.getElementById("syncMine");
   if (sm) sm.onclick = () => busy(sm, async () => { const n = await syncProducts(); if (n != null) clientConnect(); });
-  document.getElementById("shopForm").onsubmit = async (e) => {
+  document.getElementById("copyScopes").onclick = async () => { try { await navigator.clipboard.writeText(SHOPIFY_SCOPES); toast("Scopes copied"); } catch { document.getElementById("scopes").select(); } };
+  const mf = document.getElementById("manualForm");
+  mf.onsubmit = (e) => { e.preventDefault(); busy(submitBtn(mf), async () => {
+    const f = Object.fromEntries(new FormData(mf).entries());
+    toast("Connecting… this can take up to half a minute while we import your products.");
+    const { data, error } = await sb.functions.invoke("shopify-connect-manual", { body: f });
+    if (error || !data?.ok) { let m = error?.message || "Could not connect"; try { m = (await error.context.json()).error || m; } catch {} return toast(m, true); }
+    toast(`Connected ${data.shop}.${data.imported != null ? ` ${data.imported} products imported.` : " Your products are being imported."}`);
+    if (data.warning) toast(data.warning, true);
+    mf.reset(); location.hash = data.imported ? "/products" : "/connect"; clientConnect();
+  }); };
+  const sf = document.getElementById("shopForm");
+  if (sf) sf.onsubmit = async (e) => {
     e.preventDefault();
     let shop = String(new FormData(e.target).get("shop")).trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
     if (shop && !shop.includes(".")) shop += ".myshopify.com";
