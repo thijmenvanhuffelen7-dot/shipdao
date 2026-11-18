@@ -426,4 +426,6 @@ def partners():
 (OUT / "docs.html").write_text(docs(), encoding="utf-8")
 (OUT / "404.html").write_text(notfound(), encoding="utf-8")
 (OUT / "partners.html").write_text(partners(), encoding="utf-8")
+(OUT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(f"  <url><loc>https://shipdao.nl{u}</loc></url>\n" for u in ["/", "/partners", "/docs"]) + "</urlset>\n", encoding="utf-8")
+(OUT / "robots.txt").write_text("User-agent: *\nAllow: /\nSitemap: https://shipdao.nl/sitemap.xml\n", encoding="utf-8")
 print("built", [p.name for p in OUT.glob("*.html")])

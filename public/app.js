@@ -391,8 +391,8 @@ const addrText = (a) => esc([a?.name || [a?.first_name, a?.last_name].filter(Boo
 async function uploadQc(files, { clientId, orderId = null, productId = null }) {
   let n = 0;
   for (const file of files) {
-    if (!/^image\//.test(file.type)) { toast(`${file.name}: not an image`, true); continue; }
-    if (file.size > 8 * 1024 * 1024) { toast(`${file.name}: larger than 8 MB`, true); continue; }
+    if (!/^image\//.test(file.type)) { toast(ME?.role === "agent" ? L(`${file.name}: not an image`, `${file.name}：不是图片`) : `${file.name}: not an image`, true); continue; }
+    if (file.size > 8 * 1024 * 1024) { toast(ME?.role === "agent" ? L(`${file.name}: larger than 8 MB`, `${file.name}：超过 8 MB`) : `${file.name}: larger than 8 MB`, true); continue; }
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     const path = `${clientId}/${orderId || productId}/${crypto.randomUUID()}.${ext}`;
     const up = await sb.storage.from("qc").upload(path, file, { contentType: file.type, upsert: false });
@@ -401,7 +401,7 @@ async function uploadQc(files, { clientId, orderId = null, productId = null }) {
     if (error) { toast(error.message, true); continue; }
     n++;
   }
-  if (n) toast(`${n} photo${n > 1 ? "s" : ""} uploaded`);
+  if (n) toast(ME?.role === "agent" ? L(`${n} photo${n > 1 ? "s" : ""} uploaded`, `已上传 ${n} 张照片`) : `${n} photo${n > 1 ? "s" : ""} uploaded`);
   return n;
 }
 async function qcGallery({ orderId = null, productId = null }) {

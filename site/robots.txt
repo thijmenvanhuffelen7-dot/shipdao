@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://shipdao.nl/sitemap.xml
