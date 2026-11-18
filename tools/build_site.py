@@ -66,22 +66,29 @@ FAQ = [("Which countries do you ship to?", "We ship worldwide. Tell us where you
        ("What happens around Chinese New Year?", "Factories close for about two weeks around Chinese New Year. We warn you weeks ahead, so you can stock up on bestsellers before the break.")]
 
 # ---- homepage (dark/cream layout) ----
+def page_head(title, desc, path):
+    return head(title, desc, path).replace(
+    '<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/assets/site.css">',
+    '<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600;1,700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/assets/home.css">').replace("<body>", '<body class="h">')
+
 HOME_HEAD = lambda: head("Shipdao: China fulfilment for scaling dropshippers", "China fulfilment for dropshippers who are scaling. Faster delivery than AliExpress, your own packaging and one all-in price per order. No stock and no minimums.", "/").replace(
     '<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/assets/site.css">',
     '<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600;1,700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/assets/home.css">').replace("<body>", '<body class="h">')
 
-HNAV = """<header class="nav"><div class="hw">
+def hnav(pre=""):
+    return f"""<header class="nav"><div class="hw">
 <a class="brand" href="/"><span class="seal">道</span>shipdao<i>.</i></a>
-<nav class="links"><a href="#how">How it works</a><a href="#why">Why Shipdao</a><a href="#promises">Promises</a><a href="#scale">Scaling</a><a href="#plans">Plans</a><a href="#faq">FAQ</a><a href="/docs">Docs</a><a href="#" data-portal="/#/login">Log in</a></nav>
-<a class="btn sm" href="#contact">Free price check</a>
+<nav class="links"><a href="{pre}#how">How it works</a><a href="{pre}#why">Why Shipdao</a><a href="{pre}#promises">Promises</a><a href="{pre}#scale">Scaling</a><a href="{pre}#plans">Plans</a><a href="{pre}#faq">FAQ</a><a href="/partners">Partners</a><a href="/docs">Docs</a><a href="#" data-portal="/#/login">Log in</a></nav>
+<a class="btn sm" href="{pre}#contact">Free price check</a>
 <button class="burger" aria-label="Menu"><span></span><span></span><span></span></button>
 </div></header>"""
 
-HFOOT = f"""<footer class="hfoot"><div class="hw">
+def hfoot(pre=""):
+    return f"""<footer class="hfoot"><div class="hw">
 <div class="fg">
 <div class="fb"><a class="brand" href="/"><span class="seal">道</span>shipdao<i>.</i></a><p>China fulfilment for dropshippers who are building a brand. From the factory in China to your customer's door.</p></div>
-<div><p class="mono">Explore</p><a href="#how">How it works</a><a href="#promises">Promises</a><a href="#plans">Plans</a><a href="#faq">FAQ</a><a href="/docs">Documentation</a></div>
-<div><p class="mono">Contact</p><a href="mailto:{EMAIL}">{EMAIL}</a><a href="#" data-wa>WhatsApp</a><a href="#contact">Free price check</a></div>
+<div><p class="mono">Explore</p><a href="{pre}#how">How it works</a><a href="{pre}#promises">Promises</a><a href="{pre}#plans">Plans</a><a href="{pre}#faq">FAQ</a><a href="/docs">Documentation</a><a href="/partners">Partners</a></div>
+<div><p class="mono">Contact</p><a href="mailto:{EMAIL}">{EMAIL}</a><a href="#" data-wa>WhatsApp</a><a href="{pre}#contact">Free price check</a></div>
 <div><p class="mono">Account</p><a href="#" data-portal="/#/login">Log in</a><a href="#" data-portal="/#/signup">Create an account</a><a href="#" data-portal="/#/terms">Terms</a><a href="#" data-portal="/#/privacy">Privacy</a></div>
 </div>
 <p class="co">{COMPANY}</p>
@@ -89,6 +96,9 @@ HFOOT = f"""<footer class="hfoot"><div class="hw">
 </div></footer>
 <script src="/assets/site.js" defer></script>
 </body></html>"""
+
+HNAV = hnav()
+HFOOT = hfoot()
 
 TICKER = ["<b>24h</b> all-in quote", "<b>€0</b> stock needed", "<b>No</b> minimums", "<b>QC</b> photos every batch", "<b>Auto</b> tracking to Shopify", "<b>Same-day</b> replies on WhatsApp"]
 
@@ -318,6 +328,10 @@ CH = [
   ("The fine print", [("p", "Our terms, privacy statement and data processing agreement are in your portal at app.shipdao.nl.")], None)]),
 ]
 
+def sub_hero(kick, title, lead, ctas=""):
+    return f"""<section class="hero sub"><div class="ink-bg" aria-hidden="true">{MOUNTAIN}<span class="han">道</span></div>
+  <div class="hw"><p class="mono kick">{kick}</p><h1>{title}</h1><p class="side wide">{lead}</p>{ctas}</div></section>"""
+
 def docs():
     toc = "".join(f'<a href="#{cid}"><span>{i+1:02d}</span>{E(t)}</a>' for i, (cid, t, _, _) in enumerate(CH))
     body = ""
@@ -328,17 +342,88 @@ def docs():
             for kind, c in blocks:
                 if kind == "p": inner += f"<p>{E(c)}</p>"
                 else: inner += f"<{kind}>" + "".join(f"<li>{E(x)}</li>" for x in c) + f"</{kind}>"
-            fig = f'<figure><img src="/img/{img[0]}" alt="{E(img[1])}" loading="lazy"><figcaption>{E(img[1])}</figcaption></figure>' if img else ""
-            cards += f'<div class="dcard" id="{cid}-{j+1}" data-r><h3><span>{i+1}.{j+1}</span>{E(st)}</h3>{inner}{fig}</div>'
-        body += f'<section class="chap" id="{cid}"><p class="eb">Chapter {i+1:02d}</p><h2>{E(title)}</h2><p>{E(intro)}</p>{cards}</section>'
-    cta = '<div class="dcard" style="background:var(--rice);border:0"><h3>Ready to see your price per order?</h3><p class="muted">Send your products through the free price check, or create your account straight away.</p><p style="margin-top:14px"><a class="btn" href="#" data-portal="/#/signup">Create your free account →</a></p></div>'
-    return head("Documentation · Shipdao", "How Shipdao works: connecting Shopify, prices, balance, orders, tracking and quality checks, explained step by step.", "/docs") + NAV + f"""
-<main><section class="dhead"><div class="wrap"><p class="eb">Documentation · 文档</p><h1>Everything about Shipdao</h1><p>How we work, how to connect your store, and every page of your portal explained. Every section has a number, so “6.4” is a link you can send to anyone.</p></div></section>
-<section class="dbody"><div class="wrap dcols"><nav class="toc">{toc}</nav><div>{body}{cta}</div></div></section></main>""" + FOOT
+            fig = f'<figure><img src="/img/{img[0]}" alt="{E(img[1])}" loading="lazy"><figcaption class="mono">{E(img[1])}</figcaption></figure>' if img else ""
+            cards += f'<article class="doc" id="{cid}-{j+1}"><h3><span class="mono acc">{i+1}.{j+1}</span>{E(st)}</h3>{inner}{fig}</article>'
+        body += f'<section class="chap" id="{cid}"><p class="mono acc">Chapter {i+1:02d}</p><h2>{E(title)}</h2><p class="lead">{E(intro)}</p>{cards}</section>'
+    cta = '<div class="doc-cta"><h3>Ready to see your price per order?</h3><p>Send your products through the free price check, or create your account straight away.</p><p class="ctas"><a class="btn arrow" href="/#contact">Free price check<b>→</b></a><a class="btn line" href="#" data-portal="/#/signup">Create your account</a></p></div>'
+    return page_head("Documentation · Shipdao", "How Shipdao works: connecting Shopify, prices, balance, orders, tracking and quality checks, explained step by step.", "/docs") + hnav("/") + f"""
+<main>{sub_hero("Documentation · 文档", "Everything about <em>Shipdao.</em>", "How we work, how to connect your store, and every page of your portal explained. Every section has a number, so “6.4” is a link you can send to anyone.")}
+<section class="cs docs"><div class="hw dcols"><nav class="toc" aria-label="Chapters">{toc}</nav><div>{body}{cta}</div></div></section></main>""" + hfoot("/")
 
-NOTFOUND = head("Page not found · Shipdao", "This page does not exist.", "/404") + NAV + '<main class="sec"><div class="wrap" style="text-align:center"><h1>Page not found</h1><p class="sub" style="margin:16px auto 28px">This page does not exist (any more).</p><a class="btn" href="/">Back to the homepage</a></div></main>' + FOOT
+def notfound():
+    return page_head("Page not found · Shipdao", "This page does not exist.", "/404") + hnav("/") + """
+<main><section class="hero sub nf"><div class="ink-bg" aria-hidden="true"><span class="han">迷</span></div>
+<div class="hw"><p class="mono kick">404 · 迷路</p><h1>This page got <em>lost in transit.</em></h1><p class="side wide">It does not exist (any more). Unlike your parcels, we will not reship this one.</p>
+<p class="ctas"><a class="btn arrow" href="/">Back to the homepage<b>→</b></a><a class="btn ghost" href="/docs">Read the docs</a></p></div></section></main>""" + hfoot("/")
+
+PARTNER_PILLARS = [("01 · What your students get", "A chain you can vouch for.", "One all-in price per order, quality checks with photos, branded packaging when they grow, and a person who answers the same day. No stock, no minimums, no contract."),
+  ("02 · What you get", "Paid on every order. Every month.", "A fixed amount for every order a store you referred ships, for as long as they ship with us. Not a one-off bounty. You see it all in your own partner dashboard."),
+  ("03 · No lock-in", "For you or for them.", "Students stay because the work is good, not because a contract says so. You can stop any time, and you always see how your stores are doing.")]
+PARTNER_STEPS = [("01", "Apply", "Tell us about your community", "Who your students are, what they sell and how many are shipping. We reply within one working day."),
+  ("02", "Your link", "Get your own partner link", "Every store that signs up through it is linked to you automatically. Existing students? We link them by hand."),
+  ("03", "They ship", "Your students connect Shopify", "We price their products within 24 hours, they top up and orders start flowing."),
+  ("04", "You earn", "Paid every month", "Your commission per shipped order, paid monthly. Lost or refunded orders do not count, the rest always does.")]
+PARTNER_FAQ = [("Who can become a partner?", "Coaches, course creators, Discord and Skool communities, agencies and creators whose audience runs or starts Shopify stores."),
+  ("How do you know which stores are mine?", "Stores that sign up through your link are linked to you automatically. If a student signed up without it, tell us and we link them by hand."),
+  ("What is the commission?", "A fixed amount per shipped order, agreed with you up front. It depends on what your students sell and how many ship. We tell you the exact number on a 15-minute call."),
+  ("When do I get paid?", "Monthly, for the orders that shipped that month. You see every store and every month in your partner dashboard."),
+  ("Do my students pay more because of me?", "No. They get the same all-in price as every other store. Your commission comes out of our margin.")]
+
+def partners():
+    pillars = "".join(f'<div><p class="mono acc">{a}</p><h3>{b}</h3><p>{c}</p></div>' for a, b, c in PARTNER_PILLARS)
+    steps = "".join(f'<div class="st{" hl" if n == "04" else ""}"><p class="mono row"><b>{n}</b><span>{tag}</span></p><h3>{t}</h3><p>{d}</p></div>' for n, tag, t, d in PARTNER_STEPS)
+    faq = "".join(f'<details{" open" if i == 0 else ""}><summary>{q}<i></i></summary><p>{a}</p></details>' for i, (q, a) in enumerate(PARTNER_FAQ))
+    return page_head("Partners · Shipdao", "A partner program for coaches and communities: send your students to a fulfilment chain you can vouch for and earn on every order they ship.", "/partners") + hnav("/") + f"""
+<main>{sub_hero("For coaches & communities · 合作伙伴", "Your students sell.<br>We <em>ship it.</em> You <span class='it'>earn.</span>",
+  "A partner program for the people sellers actually listen to. Send your students to a chain you can vouch for, and earn on every order they ship, for as long as they ship.",
+  '<p class="ctas"><a class="btn arrow" href="#apply">Become a partner<b>→</b></a><a class="btn ghost" href="#math">Do the math</a></p>')}
+
+<section class="cs"><div class="hw"><div class="b3 first" data-r>{pillars}</div></div></section>
+
+<section class="ds" id="math"><div class="hw">
+  <p class="mono acc" data-r>Do the math · 算一算</p>
+  <h2 data-r>Slide. See what a<br>community is <em class="it">worth.</em></h2>
+  <div class="pcalc" data-r>
+    <form id="pcalc">
+      <label><span>Students shipping with us</span><output id="pc-s-out">10</output><input type="range" name="s" min="1" max="200" value="10"></label>
+      <label><span>Orders per day, per student</span><output id="pc-o-out">15</output><input type="range" name="o" min="1" max="100" value="15"></label>
+      <label><span>Commission per order</span><output id="pc-c-out">€0.50</output><input type="range" name="c" min="0.1" max="2" step="0.05" value="0.5"></label>
+      <p class="mono dim">Example rate. Yours is agreed with you on a call.</p>
+    </form>
+    <div class="pout"><p class="mono">Your recurring income</p><p class="pn" id="pc-month">€2,250</p><p class="mono" id="pc-year">per month · €27,000 per year</p>
+      <p class="tx" id="pc-orders">4,500 orders a month, paid on every one, for as long as your students ship.</p></div>
+  </div>
+</div></section>
+
+<section class="cs"><div class="hw">
+  <p class="mono acc" data-r>How it works · 流程</p>
+  <h2 data-r>Live in a day.<br>Paid <em class="it">every month.</em></h2>
+  <div class="steps" data-r>{steps}</div>
+</div></section>
+
+<section class="cs" style="padding-top:0"><div class="hw faq">
+  <div data-r><h2>Questions partners ask first.</h2><p class="lead">Something else? Email <a class="acc" href="mailto:{EMAIL}">{EMAIL}</a> and you hear back the same day.</p></div>
+  <div class="acc-list" data-r>{faq}</div>
+</div></section>
+
+<section class="cs end" id="apply"><div class="hw">
+  <p class="mono acc c" data-r>Partner program · reply within one working day</p>
+  <h2 class="c huge" data-r>Let's talk<span class="acc">.</span></h2>
+  <p class="lead c" data-r>Tell us who your students are and what they sell. We show you what they get, and what you earn on every order.</p>
+  <form class="form" id="partner-form" data-r><div class="fr">
+    <div><label for="p-name">Your name</label><input id="p-name" name="name" required maxlength="120"></div>
+    <div><label for="p-size">Students or members</label><select id="p-size" name="size"><option>Under 50</option><option>50 to 250</option><option>250 to 1,000</option><option>1,000+</option></select></div>
+    <div><label for="p-email">Email</label><input id="p-email" name="email" type="email" required placeholder="you@community.com"></div></div>
+    <div class="fr one"><div><label for="p-link">Your community, course or channel (link)</label><input id="p-link" name="website" placeholder="skool.com/… · youtube.com/… · discord.gg/…" maxlength="300"></div></div>
+    <input class="hp" name="hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="btn arrow" type="submit">Apply as a partner<b>→</b></button>
+    <div class="ok">Thanks! We reply within one working day.</div>
+  </form>
+</div></section>
+</main>""" + hfoot("/")
 
 (OUT / "index.html").write_text(home(), encoding="utf-8")
 (OUT / "docs.html").write_text(docs(), encoding="utf-8")
-(OUT / "404.html").write_text(NOTFOUND, encoding="utf-8")
+(OUT / "404.html").write_text(notfound(), encoding="utf-8")
+(OUT / "partners.html").write_text(partners(), encoding="utf-8")
 print("built", [p.name for p in OUT.glob("*.html")])

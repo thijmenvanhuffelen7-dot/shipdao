@@ -61,6 +61,34 @@ document.querySelectorAll(".video[data-yt]").forEach((v) => v.addEventListener("
   v.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${v.dataset.yt}?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Shipdao intro"></iframe>`;
 }, { once: true }));
 
+// partner calculator
+const pc = document.getElementById("pcalc");
+function runPartnerCalc() {
+  if (!pc) return;
+  const s = Number(pc.s.value), o = Number(pc.o.value), c = Number(pc.c.value), orders = s * o * 30, month = orders * c;
+  const fmt = (n, d = 0) => new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR", minimumFractionDigits: d, maximumFractionDigits: d }).format(n);
+  document.getElementById("pc-s-out").textContent = s; document.getElementById("pc-o-out").textContent = o; document.getElementById("pc-c-out").textContent = fmt(c, 2);
+  document.getElementById("pc-month").textContent = fmt(month);
+  document.getElementById("pc-year").textContent = `per month · ${fmt(month * 12)} per year`;
+  document.getElementById("pc-orders").textContent = `${new Intl.NumberFormat("en-IE").format(orders)} orders a month, paid on every one, for as long as your students ship.`;
+}
+pc?.addEventListener("input", runPartnerCalc); pc?.addEventListener("submit", (e) => e.preventDefault()); runPartnerCalc();
+
+// partner application -> Leads in the portal (marked as a partner application)
+const pform = document.getElementById("partner-form");
+pform?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = pform.querySelector("button"), ok = pform.querySelector(".ok"), d = Object.fromEntries(new FormData(pform).entries());
+  if (d.hp_field) return;
+  btn.disabled = true;
+  try {
+    const r = await fetch(SITE.LEAD_URL, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: d.email, website: d.website, message: `PARTNER APPLICATION · ${d.name} · ${d.size} members` }) });
+    if (!r.ok) throw new Error(r.status);
+    pform.querySelectorAll("input,select").forEach((i) => (i.disabled = true)); btn.style.display = "none"; ok.style.display = "block";
+  } catch { btn.disabled = false; alert("Something went wrong. Please email us at hello@shipdao.nl"); }
+});
+
 // price check form -> Leads in the portal
 const form = document.getElementById("price-form");
 form?.addEventListener("submit", async (e) => {

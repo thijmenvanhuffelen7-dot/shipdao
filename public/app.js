@@ -679,7 +679,8 @@ async function clientOrders() {
 }
 async function clientBalance() {
   loading("/balance");
-  const [d, { data: invs }] = await Promise.all([rpc("client_dashboard"), sb.from("invoices").select("*").order("issued_at", { ascending: false })]);
+  const [d, { data: invsRaw }] = await Promise.all([rpc("client_dashboard"), sb.from("invoices").select("*").order("issued_at", { ascending: false })]);
+  const invs = withCreditRefs(invsRaw);
   const months = [...new Set(d.ledger.map((l) => l.created_at.slice(0, 7)))];
   const bank = !isPlaceholder(CONFIG.TOPUP_INSTRUCTIONS);
   shell("/balance", `<div class="head"><div><h1>Balance</h1><p class="muted" style="margin:4px 0 0">Every top-up and every charge, with your balance after each one.</p></div></div>
@@ -695,7 +696,7 @@ async function clientBalance() {
       <div class="row"><select id="bMonth" style="width:auto"><option value="">All months</option>${months.map((m) => `<option value="${m}">${new Date(m + "-01").toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</option>`).join("")}</select><button class="ghost sm" id="bCsv">Export (CSV)</button></div></div>
       <div id="bList"></div></div>
     <div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3>Invoices</h3>${ME.client?.company_name ? "" : `<a class="small" href="#/account">Add your company details →</a>`}</div>
-      ${invs?.length ? `<table class="tbl" style="margin-top:8px"><tr><th>Number</th><th>Date</th><th class="num">Amount</th><th></th></tr>${invs.map((i) => `<tr><td>${esc(i.number)}</td><td>${date(i.issued_at)}</td><td class="num">${eur(i.gross)}</td><td class="num"><button class="ghost sm" data-inv="${i.id}">PDF</button></td></tr>`).join("")}</table>`
+      ${invs?.length ? `<table class="tbl" style="margin-top:8px"><tr><th>Number</th><th>Date</th><th class="num">Amount</th><th></th></tr>${invs.map((i) => `<tr><td>${esc(i.number)}${i.kind === "credit" ? ` <span class="muted small">credit note</span>` : ""}</td><td>${date(i.issued_at)}</td><td class="num">${eur(i.gross)}</td><td class="num"><button class="ghost sm" data-inv="${i.id}">PDF</button></td></tr>`).join("")}</table>`
         : `<div class="empty">You get an invoice for every top-up. They appear here.</div>`}</div>`, clientCounts(d));
   document.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = () => openInvoice(invs.find((i) => i.id === b.dataset.inv))));
   bindTopup();
@@ -964,6 +965,13 @@ function clientsTable(cs) {
       <td class="num"><button class="sm" data-topup="${c.id}" data-name="${esc(c.name)}">Top up</button></td></tr>`).join("")}</table></div>`;
 }
 function bindClientActions(reload) {
+  document.querySelectorAll("[data-refund]").forEach((b) => (b.onclick = async () => {
+    const r = await ask({ title: `Refund balance to ${b.dataset.name}`, body: `First transfer the money to the store yourself. This takes it off their balance (now ${eur(b.dataset.bal)}) and makes a credit note.`,
+      fields: [{ name: "amount", label: "Amount refunded (€)", type: "number", value: b.dataset.bal, required: true }, { name: "note", label: "Note (optional)", placeholder: "e.g. store stopped" }], ok: "Refund" });
+    if (!r) return;
+    const res = await busy(b, () => rpc("admin_refund_balance", { p_client: b.dataset.refund, p_amount: Number(r.amount), p_note: r.note || null }));
+    if (res) { toast(`Done. New balance ${eur(res.balance)}${res.credit_note ? ` · credit note ${res.credit_note}` : ""}`); reload(); }
+  }));
   document.querySelectorAll("[data-topup]").forEach((b) => (b.onclick = async () => {
     const PAID = "Payment received (invoice is made)", FREE = "Free credit or correction (no invoice)";
     const r = await ask({ title: `Balance of ${b.dataset.name}`, body: "A payment gets an invoice: only use it once the money is in your account. Free credit or a correction does not. A correction can be negative, e.g. -10.",
@@ -1130,14 +1138,14 @@ async function adminLeads() {
   const [{ data: ls, error }, counts] = await Promise.all([sb.from("leads").select("*").order("created_at", { ascending: false }).limit(300), adminCounts()]);
   if (error) return toast(error.message, true);
   const signup = `${location.origin}${location.pathname}#/signup`;
-  shell("/admin/leads", `<div class="head"><div><h1>Leads</h1><p class="muted" style="margin:4px 0 0">Free price check requests from your website. Reply within 24 hours, as the site promises.</p></div>
+  shell("/admin/leads", `<div class="head"><div><h1>Leads</h1><p class="muted" style="margin:4px 0 0">Price checks and partner applications from shipdao.nl. Reply within 24 hours, as the site promises.</p></div>
       <button class="ghost" id="lCsv">Export (CSV)</button></div>
     <div class="card">${ls.length ? `<div class="scroll"><table class="tbl"><tr><th>When</th><th>Email</th><th>Store</th><th>Orders/day</th><th>Status</th><th></th></tr>
       ${ls.map((l) => `<tr><td class="small">${ago(l.created_at)}</td><td>${l.email ? `<a href="mailto:${esc(l.email)}?subject=${encodeURIComponent("Your Shipdao price check")}&body=${encodeURIComponent(`Hi,\n\nThanks for your request. Create your free account here and connect your store, then we price your products within 24 hours:\n${signup}\n\n`)}">${esc(l.email)}</a>` : "–"}</td>
         <td>${l.store_url ? link(/^https?:/.test(l.store_url) ? l.store_url : "https://" + l.store_url, l.store_url) : "–"}</td><td>${esc(l.orders_per_day || "–")}</td>
         <td><select data-ls="${l.id}" style="width:auto">${["new", "contacted", "won", "lost"].map((s) => `<option ${l.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></td>
-        <td class="small muted">${l.message ? esc(l.message) : ""}</td></tr>`).join("")}</table></div>`
-      : `<div class="empty">No leads yet. They arrive here when someone fills in the price check on your Framer site.</div>`}</div>`, counts);
+        <td class="small muted">${/^PARTNER/.test(l.message || "") ? `<span class="pill p-shipped">partner</span> ` + esc(l.message.replace(/^PARTNER APPLICATION · /, "")) : l.message ? esc(l.message) : ""}</td></tr>`).join("")}</table></div>`
+      : `<div class="empty">No leads yet. They arrive here when someone fills in the price check or the partner form on shipdao.nl.</div>`}</div>`, counts);
   document.querySelectorAll("[data-ls]").forEach((s) => (s.onchange = async () => { const { error: e } = await sb.from("leads").update({ status: s.value }).eq("id", s.dataset.ls); e ? toast(e.message, true) : toast("Saved"); }));
   document.getElementById("lCsv").onclick = () => ls.length ? downloadCsv("shipdao-leads.csv", ["Date", "Email", "Store", "Orders/day", "Status", "Message"], ls.map((l) => [l.created_at.slice(0, 10), l.email, l.store_url, l.orders_per_day, l.status, l.message])) : toast("No leads", true);
 }
@@ -1329,7 +1337,7 @@ async function adminClients() {
   shell("/admin/clients", `<div class="head"><h1>Clients</h1></div>
     ${ov.clients.length ? ov.clients.map((c) => `<div class="card" style="margin-bottom:16px">
       <div class="row" style="justify-content:space-between"><div><h3>${esc(c.name)}</h3><div class="muted small">${esc(c.contact_email || "")} ${c.store_url ? "· " + link(c.store_url, c.store_url) : ""} ${c.whatsapp ? "· " + esc(c.whatsapp) : ""}</div></div>
-        <div class="row">${pill(c.status)}<span class="small">Balance <b>${eur(c.balance)}</b></span><button class="sm" data-topup="${c.id}" data-name="${esc(c.name)}">Top up</button><button class="sm ghost" data-edit="${c.id}">Edit</button><button class="sm ghost" data-addp="${c.id}">+ Product</button></div></div>
+        <div class="row">${pill(c.status)}<span class="small">Balance <b>${eur(c.balance)}</b></span><button class="sm" data-topup="${c.id}" data-name="${esc(c.name)}">Top up</button>${Number(c.balance) > 0 ? `<button class="sm ghost" data-refund="${c.id}" data-name="${esc(c.name)}" data-bal="${Number(c.balance)}">Refund balance</button>` : ""}<button class="sm ghost" data-edit="${c.id}">Edit</button><button class="sm ghost" data-addp="${c.id}">+ Product</button></div></div>
       ${(() => { const all = (ps || []).filter((p) => p.client_id === c.id && p.shopify_status !== "DELETED"), mine = all.filter((p) => p.sourcing_status === "priced" || !p.shopify_variant_id), open = all.length - mine.length;
         const extra = open ? `<p class="small" style="margin-top:10px"><a href="#/admin/products" data-goprod="${c.id}">${open} imported product(s) still to price →</a></p>` : "";
         return extra + (mine.length ? `<table class="tbl" style="margin-top:12px"><tr><th>Product</th><th>SKU</th><th>Country</th><th class="num">Cost</th><th class="num">Margin</th><th class="num">All-in</th><th></th></tr>
@@ -1368,8 +1376,8 @@ async function adminClients() {
 // ===== INVOICES =====
 function openInvoice(inv) {
   if (!inv) return;
-  const b = inv.buyer || {}, nl = (t) => esc(t || "").replace(/\n/g, "<br>");
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${esc(inv.number)}</title><style>
+  const b = inv.buyer || {}, nl = (t) => esc(t || "").replace(/\n/g, "<br>"), credit = inv.kind === "credit";
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${credit ? "Credit note" : "Invoice"} ${esc(inv.number)}</title><style>
     body{font:14px/1.5 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1E1512;max-width:760px;margin:40px auto;padding:0 32px}
     h1{font-size:28px;margin:0}.top{display:flex;justify-content:space-between;gap:24px;margin-bottom:36px}.muted{color:#6b5d52}
     .seal{display:inline-grid;place-items:center;width:34px;height:34px;border:2px solid #B5301F;color:#B5301F;border-radius:4px;font:20px serif;margin-right:8px;vertical-align:middle}
@@ -1380,15 +1388,15 @@ function openInvoice(inv) {
     @media print{body{margin:0 auto}.noprint{display:none}}</style></head><body>
     <p class="noprint" style="background:#FBF3EC;padding:10px 14px;border-radius:8px">Choose <b>Save as PDF</b> in the print window to download this invoice.</p>
     <div class="top"><div><span class="seal">道</span><b style="font-size:20px">${esc(C.TRADE_NAME)}</b><div class="muted" style="margin-top:8px">${esc(C.LEGAL_NAME)}<br>${nl(C.ADDRESS)}<br>KvK ${esc(C.KVK)} · VAT ${esc(C.VAT)}<br>${esc(C.EMAIL)}</div></div>
-      <div style="text-align:right"><h1>Invoice</h1><div class="muted">${esc(inv.number)}<br>Date ${date(inv.issued_at)}</div><div style="margin-top:12px"><span class="paid">PAID</span></div></div></div>
+      <div style="text-align:right"><h1>${credit ? "Credit note" : "Invoice"}</h1><div class="muted">${esc(inv.number)}<br>Date ${date(inv.issued_at)}${credit && inv.credit_ref ? `<br>Credits invoice ${esc(inv.credit_ref)}` : ""}</div><div style="margin-top:12px">${credit ? `<span class="paid" style="border-color:#B5301F;color:#B5301F">CREDIT</span>` : `<span class="paid">PAID</span>`}</div></div></div>
     <div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.04em">Billed to</div>
     <div><b>${esc(b.name || "")}</b><br>${nl(b.address)}${b.country ? "<br>" + esc(b.country) : ""}${b.vat_id ? "<br>VAT " + esc(b.vat_id) : ""}${b.email ? "<br>" + esc(b.email) : ""}</div>
     <table><tr><th>Description</th><th class="r">Amount</th></tr><tr><td>${esc(inv.description)}</td><td class="r">${eur(inv.net)}</td></tr></table>
     <table class="tot"><tr><td class="r">Subtotal</td><td class="r" style="width:140px">${eur(inv.net)}</td></tr>
       <tr><td class="r">VAT ${Number(inv.vat_rate)}%</td><td class="r">${eur(inv.vat)}</td></tr>
-      <tr class="big"><td class="r">Total paid</td><td class="r">${eur(inv.gross)}</td></tr></table>
+      <tr class="big"><td class="r">${credit ? "Total credited" : "Total paid"}</td><td class="r">${eur(inv.gross)}</td></tr></table>
     ${inv.vat_note ? `<p><b>${esc(inv.vat_note)}</b></p>` : ""}
-    <p class="muted">This amount was added to your prepaid Shipdao balance. Orders are paid from that balance.</p>
+    <p class="muted">${credit ? "This amount was taken off your prepaid Shipdao balance and refunded or charged back." : "This amount was added to your prepaid Shipdao balance. Orders are paid from that balance."}</p>
     <div class="foot">${esc(C.TRADE_NAME)} is a trade name of ${esc(C.LEGAL_NAME)} · ${esc(C.ADDRESS)} · KvK ${esc(C.KVK)} · VAT ${esc(C.VAT)}</div>
     </body></html>`;
   const w = window.open("", "_blank");
@@ -1396,9 +1404,11 @@ function openInvoice(inv) {
   w.document.open(); w.document.write(html); w.document.close(); w.focus();
   setTimeout(() => { try { w.print(); } catch {} }, 400);
 }
+const withCreditRefs = (list) => { const byId = Object.fromEntries((list || []).map((i) => [i.id, i.number])); return (list || []).map((i) => ({ ...i, credit_ref: i.credit_for ? byId[i.credit_for] || "" : "" })); };
 async function adminInvoices() {
   loading("/admin/invoices");
-  const [{ data: invs }, counts] = await Promise.all([sb.from("invoices").select("*, clients(name)").order("issued_at", { ascending: false }).limit(2000), adminCounts()]);
+  const [{ data: invsRaw }, counts] = await Promise.all([sb.from("invoices").select("*, clients(name)").order("issued_at", { ascending: false }).limit(2000), adminCounts()]);
+  const invs = withCreditRefs(invsRaw);
   const months = [...new Set((invs || []).map((i) => i.issued_at.slice(0, 7)))];
   shell("/admin/invoices", `<div class="head"><div><h1>Invoices</h1><p class="muted" style="margin:4px 0 0">One for every real top-up, numbered without gaps. Test payments get no invoice. Export a month for your bookkeeping.</p></div>
       <div class="row"><select id="iMonth" style="width:auto"><option value="">All months</option>${months.map((m) => `<option value="${m}">${m}</option>`).join("")}</select><button class="ghost" id="iCsv">Export (CSV)</button></div></div>
@@ -1407,12 +1417,12 @@ async function adminInvoices() {
   const draw = () => { const ls = rows();
     document.getElementById("iList").innerHTML = ls.length ? `<div class="row small muted" style="margin-bottom:8px">Total ${eur(ls.reduce((a, i) => a + Number(i.gross), 0))} · of which VAT ${eur(ls.reduce((a, i) => a + Number(i.vat), 0))}</div>
       <div class="scroll"><table class="tbl"><tr><th>Number</th><th>Date</th><th>Client</th><th class="num">Net</th><th class="num">VAT</th><th class="num">Total</th><th></th></tr>
-      ${ls.map((i) => `<tr><td>${esc(i.number)}</td><td>${date(i.issued_at)}</td><td>${esc(i.buyer?.name || i.clients?.name || "")}${i.vat_rate == 0 ? ` <span class="muted small">0%</span>` : ""}</td><td class="num">${eur(i.net)}</td><td class="num">${eur(i.vat)}</td><td class="num"><b>${eur(i.gross)}</b></td><td class="num"><button class="ghost sm" data-inv="${i.id}">PDF</button></td></tr>`).join("")}</table></div>` : `<div class="empty">No invoices yet.</div>`;
+      ${ls.map((i) => `<tr><td>${esc(i.number)}${i.kind === "credit" ? ` <span class="muted small">credit ${esc(i.credit_ref || "")}</span>` : ""}</td><td>${date(i.issued_at)}</td><td>${esc(i.buyer?.name || i.clients?.name || "")}${i.vat_rate == 0 ? ` <span class="muted small">0%</span>` : ""}</td><td class="num">${eur(i.net)}</td><td class="num">${eur(i.vat)}</td><td class="num"><b>${eur(i.gross)}</b></td><td class="num"><button class="ghost sm" data-inv="${i.id}">PDF</button></td></tr>`).join("")}</table></div>` : `<div class="empty">No invoices yet.</div>`;
     document.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = () => openInvoice(invs.find((i) => i.id === b.dataset.inv)))); };
   draw(); document.getElementById("iMonth").onchange = draw;
   document.getElementById("iCsv").onclick = () => { const ls = rows(); if (!ls.length) return toast("Nothing to export", true);
-    downloadCsv(`shipdao-invoices-${document.getElementById("iMonth").value || "all"}.csv`, ["Number", "Date", "Client", "Country", "VAT ID", "Net", "VAT %", "VAT", "Total", "VAT note"],
-      ls.map((i) => [i.number, i.issued_at.slice(0, 10), i.buyer?.name, i.buyer?.country, i.buyer?.vat_id, i.net, i.vat_rate, i.vat, i.gross, i.vat_note])); };
+    downloadCsv(`shipdao-invoices-${document.getElementById("iMonth").value || "all"}.csv`, ["Number", "Type", "Credits invoice", "Date", "Client", "Country", "VAT ID", "Net", "VAT %", "VAT", "Total", "VAT note"],
+      ls.map((i) => [i.number, i.kind === "credit" ? "credit note" : "invoice", i.credit_ref || "", i.issued_at.slice(0, 10), i.buyer?.name, i.buyer?.country, i.buyer?.vat_id, i.net, i.vat_rate, i.vat, i.gross, i.vat_note])); };
 }
 
 // ===== CLAIMS (lost / damaged / wrong) =====
