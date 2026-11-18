@@ -45,6 +45,7 @@ function runCalc() {
   calcNote = `Calculator: sells ${money(sell)}, pays ${money(cost)} now, ${opd} orders/day, ${Math.round(ref * 1000) / 10}% refunds`;
 }
 let calcUsed = false;
+calc?.addEventListener("submit", (e) => e.preventDefault());
 calc?.addEventListener("input", () => { calcUsed = true; runCalc(); }); runCalc();
 document.getElementById("c-go")?.addEventListener("click", () => {
   const sel = document.getElementById("f-orders"), opd = calc ? Number(calc.opd.value) || 0 : 0;

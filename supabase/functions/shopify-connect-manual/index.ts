@@ -32,6 +32,10 @@ Deno.serve(async (req) => {
   if (!/^[A-Za-z0-9_-]{16,128}$/.test(appId)) return json({ error: "That Client ID does not look right. Copy it from your app's Settings in the Dev Dashboard." }, 400);
   if (appSecret.length < 16 || appSecret.length > 256) return json({ error: "That Client secret does not look right. Copy it from your app's Settings in the Dev Dashboard." }, 400);
 
+  const rl = createClient(supabaseUrl, serviceKey);
+  const { data: okRate } = await rl.rpc("service_rate_limit", { p_key: `shopconnect:${clientId}`, p_max: 10, p_seconds: 3600 });
+  if (okRate === false) return json({ error: "Too many attempts. Try again in an hour or message us." }, 429);
+
   // 1. token (client credentials grant)
   const tr = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },

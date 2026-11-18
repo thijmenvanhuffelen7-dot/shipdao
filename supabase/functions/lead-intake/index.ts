@@ -25,6 +25,14 @@ Deno.serve(async (req) => {
   const { data: token } = await admin.rpc("service_setting", { p_key: "lead_webhook_token" });
   if (!token || !safeEqual(new URL(req.url).searchParams.get("token") ?? "", String(token))) return reply("Unauthorized", 401);
 
+  // max 5 requests per 10 minutes and 30 per day per visitor (IP only kept as a hash)
+  const ip = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim();
+  const ipHash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("shipdao-lead:" + ip)))].slice(0, 12).map((b) => b.toString(16).padStart(2, "0")).join("");
+  // plus a site-wide cap of 200 a day, against bots that rotate IP addresses
+  for (const [key, max, secs] of [[`lead:600:${ipHash}`, 5, 600], [`lead:86400:${ipHash}`, 30, 86400], ["lead:all", 200, 86400]] as const) {
+    const { data: okRate } = await admin.rpc("service_rate_limit", { p_key: key, p_max: max, p_seconds: secs });
+    if (okRate === false) return reply("Too many requests", 429);
+  }
   const raw = await req.text();
   if (raw.length > 20000) return reply("Too large", 413);
   // deno-lint-ignore no-explicit-any
@@ -38,6 +46,7 @@ Deno.serve(async (req) => {
     email: pick(body, /mail/i), store_url: pick(body, /store|url|shop|website/i),
     orders_per_day: pick(body, /order/i), message: pick(body, /message|notes?|product/i), raw: body,
   };
+  if (!lead.email || !/^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i.test(lead.email)) return reply("A valid email address is needed", 400);
   const { error } = await admin.from("leads").insert(lead);
   await admin.from("system_events").insert({ source: "site", topic: "lead", ok: !error, detail: error?.message ?? lead.email }).then(() => {}, () => {});
   if (error) return reply("Error", 500);

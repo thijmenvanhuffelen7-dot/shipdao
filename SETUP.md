@@ -115,3 +115,11 @@ Zolang je eigen Shopify-app niet door Shopify is goedgekeurd, koppelen klanten h
 Shopify admin → Settings → Apps → Develop apps → Build apps in Dev Dashboard → app "Shipdao" → scopes plakken → protected customer data aanzetten → installeren → Client ID en Client secret in de portal plakken.
 Daarna haalt de backend elke 24 uur automatisch een nieuw token op (Shopify geeft deze tokens maar 24 uur). Webhooks worden gecontroleerd met de secret van de app van die winkel.
 Is je eigen app wel goedgekeurd? Zet dan `SHOPIFY_ONE_CLICK: true` in `public/index.html`. Dan krijgen klanten ook de knop "Connect in one click".
+
+## Beveiliging (november 2026)
+- **Admin = tweestapsverificatie.** Bij je eerstvolgende login als admin moet je een authenticator-app koppelen (Google Authenticator, Microsoft Authenticator, 1Password). Daarna werkt admin alleen nog met wachtwoord + code. Dit wordt ook in de database afgedwongen, dus een gestolen wachtwoord alleen is niet genoeg.
+  - **Telefoon kwijt?** Supabase → SQL Editor: `delete from auth.mfa_factors where user_id = (select id from auth.users where email = 'JOUW-ADMIN-MAIL');` Log daarna opnieuw in en koppel een nieuwe app.
+- **Anonieme bezoekers** kunnen geen enkele tabel of functie meer aanroepen. Interne functies (saldo, orders afrekenen, service_*) zijn alleen nog voor de backend.
+- **Rate limits:** prijsformulier max 5 per 10 min en 30 per dag per bezoeker, en 200 per dag voor de hele site. Betalingen starten max 15 per uur. Winkel koppelen max 10 per uur. Berichten max 120 per uur, offertes en claims max 20 per dag per klant.
+- **Content-Security-Policy + HSTS** op site en app (`_headers` voor Cloudflare, `vercel.json` voor Vercel). Het portal-script staat daarom in `public/app.js`; zet nooit meer inline `<script>` in de HTML.
+- **Wachtwoorden** minimaal 10 tekens in de portal. Zet dit ook in Supabase: Authentication → Policies/Settings → Minimum password length = 10 en "lowercase, uppercase and digits".

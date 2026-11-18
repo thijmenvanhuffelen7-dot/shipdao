@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
   const key = Deno.env.get("MOLLIE_API_KEY");
   const appUrl = Deno.env.get("APP_URL");
-  if (!key) return json({ error: "Online payments are not set up yet. Please top up by bank transfer." }, 503);
+  if (!key) return json({ error: "Online payments are not switched on yet. Message us and we help you top up." }, 503);
   if (!appUrl) return json({ error: "APP_URL secret is missing" }, 500);
 
   const url = Deno.env.get("SUPABASE_URL")!;
@@ -56,6 +56,8 @@ Deno.serve(async (req) => {
   const amount = Math.round(Number(body.amount) * 100) / 100;
   if (!(amount >= MIN && amount <= MAX)) return json({ error: `Amount must be between €${MIN} and €${MAX}` }, 400);
 
+  const { data: okRate } = await admin.rpc("service_rate_limit", { p_key: `topup:${who.user.id}`, p_max: 15, p_seconds: 3600 });
+  if (okRate === false) return json({ error: "Too many payment attempts. Try again in an hour or message us." }, 429);
   const { data: client } = await admin.from("clients").select("name").eq("id", clientId).single();
   const { data: pay, error } = await admin.from("payments")
     .insert({ client_id: clientId, amount, created_by: who.user.id }).select("id").single();
