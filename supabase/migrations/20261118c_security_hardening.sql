@@ -56,3 +56,4 @@ create trigger rate_guard before insert on public.payments for each row execute 
 create trigger rate_guard before insert on public.quotes for each row execute function private.rate_guard('20', '86400');
 create trigger rate_guard before insert on public.claims for each row execute function private.rate_guard('20', '86400');
 create trigger rate_guard before insert on public.messages for each row execute function private.rate_guard('120', '3600');
+revoke execute on function public.handle_new_user() from authenticated;
