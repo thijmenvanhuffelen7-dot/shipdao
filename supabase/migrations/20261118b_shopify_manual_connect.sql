@@ -52,3 +52,18 @@ revoke all on function public.service_shop_webhook_secret(text) from public, ano
 revoke all on function public.service_connect_manual(uuid,text,text,text,text,text,int) from public, anon, authenticated;
 revoke all on function public.service_shop_token(uuid) from public, anon, authenticated;
 revoke all on function public.service_fulfillment_info(uuid) from public, anon, authenticated;
+
+-- Free credit or a correction by the admin: changes the balance without an invoice (ledger type 'adjustment').
+create or replace function public.admin_credit(p_client uuid, p_amount numeric, p_description text default null)
+returns json language plpgsql security definer set search_path = '' as $$
+declare n int := 0;
+begin
+  if not public.is_admin() then raise exception 'not allowed'; end if;
+  if p_amount is null or p_amount = 0 then raise exception 'amount must not be zero'; end if;
+  insert into public.ledger (client_id, type, amount, description, created_by)
+    values (p_client, 'adjustment', p_amount, coalesce(nullif(trim(p_description),''), case when p_amount > 0 then 'Credit from Shipdao' else 'Correction' end), auth.uid());
+  if p_amount > 0 then n := public.process_waiting_orders(p_client); end if;
+  return json_build_object('balance', public.client_balance(p_client), 'orders_released', n);
+end $$;
+revoke all on function public.admin_credit(uuid,numeric,text) from public, anon;
+grant execute on function public.admin_credit(uuid,numeric,text) to authenticated;

@@ -1113,10 +1113,14 @@ function clientsTable(cs) {
 }
 function bindClientActions(reload) {
   document.querySelectorAll("[data-topup]").forEach((b) => (b.onclick = async () => {
-    const r = await ask({ title: `Top up ${b.dataset.name}`, body: "Only after the money is in your account. Waiting orders are charged right away.",
-      fields: [{ name: "amount", label: "Amount (€)", type: "number", required: true }, { name: "desc", label: "Note", value: "Bank transfer" }], ok: "Add to balance" });
-    if (!r || !(Number(r.amount) > 0)) return;
-    const res = await busy(b, () => rpc("admin_topup", { p_client: b.dataset.topup, p_amount: Number(r.amount), p_description: r.desc }));
+    const PAID = "Payment received (invoice is made)", FREE = "Free credit or correction (no invoice)";
+    const r = await ask({ title: `Balance of ${b.dataset.name}`, body: "A payment gets an invoice: only use it once the money is in your account. Free credit or a correction does not. A correction can be negative, e.g. -10.",
+      fields: [{ name: "kind", label: "What is this?", type: "select", options: [PAID, FREE], value: PAID }, { name: "amount", label: "Amount (€)", type: "number", required: true }, { name: "desc", label: "Note (the store sees this)", value: "Bank transfer" }], ok: "Save" });
+    if (!r) return;
+    const amt = Number(r.amount), paid = r.kind === PAID;
+    if (paid ? !(amt > 0) : !amt) return toast(paid ? "A payment must be more than €0" : "Enter an amount", true);
+    const res = await busy(b, () => paid ? rpc("admin_topup", { p_client: b.dataset.topup, p_amount: amt, p_description: r.desc })
+      : rpc("admin_credit", { p_client: b.dataset.topup, p_amount: amt, p_description: r.desc === "Bank transfer" ? "" : r.desc }));
     if (!res) return;
     toast(`New balance ${eur(res.balance)}${res.orders_released ? ` · ${res.orders_released} order(s) released` : ""}`); reload();
   }));
